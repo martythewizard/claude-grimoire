@@ -1,0 +1,94 @@
+{
+  "name": "claude-grimoire",
+  "version": "0.1.0",
+  "description": "Reusable agentic toolkit for Product Engineers - skills, agents, and teams for efficient workflows across repositories",
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/claude-grimoire"
+  },
+  "skills": [
+    {
+      "name": "pr-author",
+      "path": "skills/pr-author/skill.md",
+      "description": "Generate comprehensive PR descriptions with GitHub issue references"
+    },
+    {
+      "name": "visual-prd",
+      "path": "skills/visual-prd/skill.md",
+      "description": "Create visual Product Requirements Documents with frontend-design"
+    },
+    {
+      "name": "initiative-creator",
+      "path": "skills/initiative-creator/skill.md",
+      "description": "Create well-structured GitHub initiatives with proper metadata"
+    },
+    {
+      "name": "initiative-breakdown",
+      "path": "skills/initiative-breakdown/skill.md",
+      "description": "Break GitHub initiatives into actionable tasks"
+    },
+    {
+      "name": "incident-handler",
+      "path": "skills/incident-handler/skill.md",
+      "description": "End-to-end incident response workflow"
+    }
+  ],
+  "agents": [
+    {
+      "name": "github-context-agent",
+      "path": "agents/github-context-agent/agent.md",
+      "description": "Gather comprehensive GitHub context for issues and initiatives"
+    },
+    {
+      "name": "incident-context-agent",
+      "path": "agents/incident-context-agent/agent.md",
+      "description": "Query Firehydrant and affected services for incident intelligence"
+    },
+    {
+      "name": "documentation-agent",
+      "path": "agents/documentation-agent/agent.md",
+      "description": "Generate post-mortems and technical documentation"
+    },
+    {
+      "name": "system-architect-agent",
+      "path": "agents/system-architect-agent/agent.md",
+      "description": "Design abstraction layers and create architecture visualizations"
+    }
+  ],
+  "teams": [
+    {
+      "name": "feature-delivery-team",
+      "path": "teams/feature-delivery-team/team.md",
+      "description": "Complete feature delivery from planning to implementation"
+    },
+    {
+      "name": "incident-response-team",
+      "path": "teams/incident-response-team/team.md",
+      "description": "End-to-end incident response from alert to documentation"
+    },
+    {
+      "name": "pr-autopilot-team",
+      "path": "teams/pr-autopilot-team/team.md",
+      "description": "Fully automated PR creation after code review passes"
+    }
+  ],
+  "dependencies": {
+    "external": [
+      "github",
+      "firehydrant",
+      "coralogix"
+    ],
+    "skills": [
+      "frontend-design",
+      "staff-developer",
+      "staff-engineer",
+      "two-claude-review"
+    ]
+  },
+  "config": {
+    "perRepoConfigPath": ".claude-grimoire/config.json",
+    "globalConfigPath": "~/.claude/claude-grimoire/config.json"
+  }
+}
