@@ -73,6 +73,8 @@ The agent accepts a context request object:
 }
 ```
 
+**Note:** New include fields (`yaml`, `project`, `workstreams`, `milestones`, `progress`) default to `false` for backward compatibility. Only explicitly opt-in when needed to avoid unnecessary API calls.
+
 ### Type Descriptions
 
 **Existing types:**
@@ -81,7 +83,7 @@ The agent accepts a context request object:
 - `repo` - Repository metadata
 
 **New types:**
-- `initiative` - Initiative defined in eci-global/initiatives YAML file
+- `initiative` - Initiative defined in eci-global/initiatives YAML file (previously supported issue-based initiatives, now adds YAML-based support)
 - `project` - GitHub Project v2 (organization or repository project)
 - `workstream` - Logical grouping within an initiative (repo + milestones)
 - `milestone` - GitHub milestone within a repository
@@ -98,7 +100,7 @@ The agent detects type from identifier format:
 **Project identifiers:**
 - URL: `https://github.com/orgs/eci-global/projects/14`
 - Org project: `eci-global#14`
-- Repo project: `owner/repo#project-14`
+- Repo project: `owner/repo#project-14` (the `project-` prefix distinguishes from issues)
 
 **Workstream identifiers:**
 - Initiative + workstream: `initiative:2026-q1-ai-cost workstream:S3 Data Lake`
@@ -111,10 +113,11 @@ The agent detects type from identifier format:
 **Issue/PR identifiers (existing):**
 - `owner/repo#123`
 - `https://github.com/owner/repo/issues/123`
+- `https://github.com/owner/repo/pull/456`
 - `#123` (if repo context available)
 
 **Ambiguous detection:**
-When identifier could match multiple types, agent asks for clarification.
+When identifier could match multiple types, agent asks for clarification. See Input Type Detection section below for detection priority rules and clarification flow.
 
 ### Depth Levels
 
