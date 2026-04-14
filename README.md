@@ -245,6 +245,26 @@ End-to-end incident response from alert to post-mortem with automated context ga
 
 [Full documentation →](skills/incident-handler/skill.md)
 
+---
+
+### 🔍 initiative-validator
+Validate initiative YAML files against GitHub, JIRA, and Confluence.
+
+```bash
+/initiative-validator path/to/initiative.yaml
+```
+
+**When to use:** Before committing initiative YAML changes, or when checking for stale references
+
+**What it does:**
+- Validates YAML schema and required fields
+- Checks GitHub milestones exist in referenced repos
+- Verifies JIRA epic keys are accessible
+- Confirms Confluence pages exist
+- Generates actionable markdown report
+
+[Full documentation →](skills/initiative-validator/skill.md)
+
 ## Agents
 
 Agents are specialized subagents that skills and teams delegate to. They run autonomously and return structured results.

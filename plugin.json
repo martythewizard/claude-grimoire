@@ -42,6 +42,11 @@
       "name": "incident-handler",
       "path": "skills/incident-handler/skill.md",
       "description": "End-to-end incident response workflow"
+    },
+    {
+      "name": "initiative-validator",
+      "path": "skills/initiative-validator/skill.md",
+      "description": "Validate initiative YAML files against GitHub, JIRA, and Confluence"
     }
   ],
   "agents": [
