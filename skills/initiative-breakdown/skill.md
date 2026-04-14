@@ -123,7 +123,110 @@ Skill: ✓ Initiative found
 Ready to break down. Continue? (y/n)
 ```
 
-### 2. Analyze Current Codebase
+### 2. Initiative Breakdown Workflow
+
+When context type is "initiative", break into tasks across all workstreams.
+
+**Process:**
+
+**Step 1: Analyze Initiative Structure**
+
+```
+From context:
+  - Extract all workstreams and their repos
+  - Extract milestones per workstream
+  - Note github_project if exists
+  - Check progress metrics
+```
+
+**Step 2: Validate Scope**
+
+```
+Ask user:
+"This initiative has <N> workstreams and <M> milestones. Should I:
+A) Break down all workstreams
+B) Break down specific workstreams only (choose which)
+C) Skip workstreams, create general tasks
+
+If scope is too large (>10 milestones):
+  Recommend breaking down by workstream instead
+  "This is large. Consider using workstream-specific breakdown:
+   /initiative-breakdown initiative:name workstream:<workstream-name>"
+```
+
+**Step 3: Generate Tasks by Workstream**
+
+For each workstream:
+```
+1. Identify task categories:
+   - Foundation tasks (abstractions, core logic)
+   - Implementation tasks (features, endpoints)
+   - Testing tasks (unit, integration)
+   - Documentation tasks (README, API docs)
+
+2. For each task:
+   - Create task description
+   - Map to specific milestone (from workstream)
+   - Add acceptance criteria
+   - Estimate effort (S/M/L)
+   - Note dependencies
+
+3. Group tasks by milestone
+```
+
+**Step 4: Create GitHub Issues**
+
+For each task:
+```bash
+# Create issue
+gh issue create \
+  --repo <workstream-repo> \
+  --title "[<milestone>] <task-title>" \
+  --body "<task-description>" \
+  --label task,<category>
+  
+# If initiative has github_project: Link to project
+if [ -n "$github_project" ]; then
+  gh project item-add <project-number> \
+    --owner <org> \
+    --url <issue-url>
+fi
+
+# If task maps to milestone: Assign milestone
+if [ -n "$milestone" ]; then
+  gh issue edit <issue-number> \
+    --repo <repo> \
+    --milestone "<milestone-title>"
+fi
+
+# Add initiative reference comment
+gh issue comment <issue-number> \
+  --repo <repo> \
+  --body "Part of initiative: [<name>](<yaml-url>)"
+```
+
+**Step 5: Report Progress**
+
+```
+✅ Breakdown complete!
+
+Created <N> tasks across <M> workstreams:
+
+Workstream: Quota Enforcement (eci-global/coralogix)
+  Milestone M1: 5 tasks (#234, #235, #236, #237, #238)
+  Milestone M2: 4 tasks (#239, #240, #241, #242)
+
+All tasks linked to:
+  - GitHub Project: eci-global#8
+  - Initiative YAML: initiatives/2026-q1-coralogix-quota-manager.yaml
+
+Next steps:
+1. Review tasks in GitHub Project
+2. Assign tasks to team members
+3. Start with M1 tasks (foundation)
+```
+
+### 3. Analyze Current Codebase
 
 Understand existing architecture and patterns:
 
@@ -146,7 +249,7 @@ Understand existing architecture and patterns:
 - Shared UI components or styles
 - Database migration patterns
 
-### 3. Determine Complexity
+### 4. Determine Complexity
 
 Assess whether architectural design is needed:
 
@@ -167,7 +270,7 @@ Assess whether architectural design is needed:
 
 **If they choose A:** Invoke `system-architect-agent` with initiative context
 
-### 4. Identify Task Categories
+### 5. Identify Task Categories
 
 Break work into logical groupings:
 
@@ -186,7 +289,7 @@ Break work into logical groupings:
 3. Integration and testing in parallel
 4. Documentation and deployment near the end
 
-### 5. Generate Task List
+### 6. Generate Task List
 
 Create specific, actionable tasks within each category:
 
@@ -250,7 +353,7 @@ Create specific, actionable tasks within each category:
 - **Medium**: Important but not urgent
 - **Low**: Nice-to-have, can be deferred
 
-### 6. Map Dependencies
+### 7. Map Dependencies
 
 Create dependency graph showing task order:
 
@@ -277,7 +380,7 @@ graph TD
 - Critical path identified
 - Parallelizable work clearly marked
 
-### 7. Review and Refine
+### 8. Review and Refine
 
 Present the task breakdown to the user:
 
@@ -301,7 +404,7 @@ Present the task breakdown to the user:
 - Add missing edge cases or requirements
 - Adjust effort estimates
 
-### 8. Create GitHub Issues
+### 9. Create GitHub Issues
 
 Once user approves, create issues for each task:
 
@@ -337,7 +440,7 @@ gh issue comment 125 --body "Depends on #123"
 gh issue comment 123 --body "Blocks #125"
 ```
 
-### 9. Create Summary Issue Comment
+### 10. Create Summary Issue Comment
 
 Add a summary comment to the parent initiative:
 
@@ -373,7 +476,7 @@ This initiative has been broken down into [N] tasks:
 Generated with 🤖 [claude-grimoire](https://github.com/martythewizard/claude-grimoire)
 ```
 
-### 10. Report Completion
+### 11. Report Completion
 
 Provide user with summary and next steps:
 
