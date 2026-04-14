@@ -168,6 +168,54 @@ EOF
 )"
 ```
 
+### Step 9: Enhanced Context Gathering
+
+After gathering basic PR context (commits, issues), I'll check for initiative/project linkage:
+
+**Check for Initiative/Project Linkage:**
+
+For each issue referenced in commits:
+1. Invoke `github-context-agent` with `type="issue"` and the issue number
+2. Extract from response:
+   - `related_initiative` (if issue is part of initiative)
+   - `related_project` (if issue is in project)
+   - `related_workstream` (if part of workstream)
+   - `related_milestone` (if assigned to milestone)
+3. Collect all linkage information
+
+If any linkage is found, I'll add a new "Related Work" section to the PR description with this information.
+
+**Enhanced PR Description Template:**
+
+Add new section after "Related Issues":
+
+```markdown
+## Summary
+[existing summary]
+
+## Related Work
+
+**Issues:**
+- Closes #[number] - [title]
+
+**Initiative:** (if applicable)
+[Initiative Name](yaml-url)
+
+**Project:** (if applicable)
+https://github.com/orgs/[org]/projects/[number]
+
+**Workstream:** (if applicable)
+[Workstream Name]
+
+**Milestone:** (if applicable)
+[Milestone Title] ([repo])
+
+## Changes
+[existing changes section]
+
+[... rest of template ...]
+```
+
 ## Configuration
 
 ### Per-Repo Config (`.claude-grimoire/config.json`)
