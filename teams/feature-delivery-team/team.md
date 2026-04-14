@@ -118,7 +118,7 @@ If user provided reference:
     - project
     - workstream
     - milestone
-    - standalone
+    - issue
 ```
 
 **Step 4: Route to Appropriate Workflow**
@@ -142,9 +142,10 @@ Based on context type:
     → Milestone workflow
     → Phases: Create tasks → Implementation
     
-  standalone (no context):
-    → Simple workflow
-    → Phases: Create issue → Implementation (skip breakdown/review)
+  issue:
+    → Check if issue has related_initiative/project/workstream/milestone
+    → If yes: Follow appropriate workflow above
+    → If no: Standalone workflow (Create issue → Implementation, skip breakdown/review)
 ```
 
 **Output:** Context object with type and organizational structure
@@ -207,7 +208,7 @@ Based on context type:
 
 **Goal:** Break work into actionable tasks
 
-**Input:** Context from Phase 1 (initiative/project/workstream/milestone/standalone)
+**Input:** Context from Phase 1 (initiative/project/workstream/milestone/issue)
 
 **Process:**
 
@@ -232,7 +233,7 @@ milestone:
   Invoke /initiative-breakdown with milestone reference
   Create tasks for single milestone
   
-standalone:
+issue (without related context):
   Skip breakdown
   Create single issue via /initiative-creator
   Proceed directly to implementation
@@ -271,7 +272,7 @@ Iterate until approved
 
 **Output:** Ordered tasks with acceptance criteria and estimates
 
-**Skip if:** Standalone issue (no breakdown needed)
+**Skip if:** Issue without related context (no breakdown needed)
 
 ---
 
