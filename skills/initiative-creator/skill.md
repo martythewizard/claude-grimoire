@@ -78,6 +78,77 @@ The skill branches to one of three workflows based on detected mode:
 - Linking Mode → Task 3
 - Full Initiative Mode → Task 4
 
+## Standalone Issue Mode
+
+Create a single GitHub issue without linking to initiatives or projects.
+
+### When to Use
+
+- Quick bug fixes
+- Small standalone tasks
+- Issues that don't fit into any initiative
+- Exploratory work
+
+### Workflow
+
+**Step 1: Gather Issue Details**
+
+Ask user (or use parameters):
+- Title (required)
+- Description/body (required)
+- Repository (required if not in repo context)
+- Labels (optional)
+- Assignees (optional)
+- Milestone (optional, but no initiative context)
+
+**Step 2: Create Issue**
+
+```bash
+gh issue create \
+  --repo <owner>/<repo> \
+  --title "<title>" \
+  --body "<body>" \
+  --label "<labels>" \
+  --assignee "<assignee>"
+```
+
+**Step 3: Report Completion**
+
+```
+✅ Issue created: https://github.com/<owner>/<repo>/issues/<number>
+
+This is a standalone issue (not linked to any initiative or project).
+```
+
+### Parameter Examples
+
+```bash
+# Interactive
+/initiative-creator
+> "What would you like to create?"
+> A) Standalone issue
+
+# Non-interactive
+/initiative-creator --title "Fix login bug" --body "Users can't login" --repo eci-global/app
+
+# With labels and assignee
+/initiative-creator --title "Update docs" --body "Add API docs" --repo owner/repo --label documentation --assignee username
+```
+
+### Example Output
+
+```
+Issue created at: https://github.com/eci-global/app/issues/789
+
+Title: Fix login bug
+Labels: bug
+Assignee: none
+Milestone: none
+
+This is a standalone issue. To link it to an initiative or project later, run:
+  /initiative-creator --issue eci-global/app#789 --project org#14
+```
+
 ### 2. Goals and Success Metrics
 
 Define what success looks like:
