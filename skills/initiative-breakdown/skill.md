@@ -226,7 +226,44 @@ Next steps:
 3. Start with M1 tasks (foundation)
 ```
 
-### 3. Analyze Current Codebase
+### 3. Project Breakdown Workflow
+
+When context type is "project", organize by repos/milestones.
+
+```
+1. Fetch project items via github-context-agent
+2. Group existing items by repo and milestone
+3. Identify gaps (areas without tasks)
+4. Generate new tasks for gaps
+5. Create issues and link to project
+6. Check for related initiative YAML (if detected by agent)
+```
+
+### 4. Workstream Breakdown Workflow
+
+When context type is "workstream", scope to single workstream.
+
+```
+1. Extract milestones for this workstream only
+2. Generate tasks scoped to workstream's repo
+3. Assign to workstream's milestones
+4. Link to github_project if initiative has one
+5. Don't touch other workstreams
+```
+
+### 5. Milestone Breakdown Workflow
+
+When context type is "milestone", create tasks for one milestone.
+
+```
+1. See existing issues in milestone
+2. Generate additional tasks needed
+3. Create issues in milestone's repo
+4. Assign all to this milestone
+5. Link to project if milestone is part of tracked initiative
+```
+
+### 6. Analyze Current Codebase
 
 Understand existing architecture and patterns:
 
@@ -249,7 +286,7 @@ Understand existing architecture and patterns:
 - Shared UI components or styles
 - Database migration patterns
 
-### 4. Determine Complexity
+### 7. Determine Complexity
 
 Assess whether architectural design is needed:
 
@@ -270,7 +307,7 @@ Assess whether architectural design is needed:
 
 **If they choose A:** Invoke `system-architect-agent` with initiative context
 
-### 5. Identify Task Categories
+### 8. Identify Task Categories
 
 Break work into logical groupings:
 
@@ -289,7 +326,7 @@ Break work into logical groupings:
 3. Integration and testing in parallel
 4. Documentation and deployment near the end
 
-### 6. Generate Task List
+### 9. Generate Task List
 
 Create specific, actionable tasks within each category:
 
@@ -353,7 +390,7 @@ Create specific, actionable tasks within each category:
 - **Medium**: Important but not urgent
 - **Low**: Nice-to-have, can be deferred
 
-### 7. Map Dependencies
+### 10. Map Dependencies
 
 Create dependency graph showing task order:
 
@@ -380,7 +417,7 @@ graph TD
 - Critical path identified
 - Parallelizable work clearly marked
 
-### 8. Review and Refine
+### 11. Review and Refine
 
 Present the task breakdown to the user:
 
@@ -404,7 +441,7 @@ Present the task breakdown to the user:
 - Add missing edge cases or requirements
 - Adjust effort estimates
 
-### 9. Create GitHub Issues
+### 12. Create GitHub Issues
 
 Once user approves, create issues for each task:
 
@@ -440,7 +477,7 @@ gh issue comment 125 --body "Depends on #123"
 gh issue comment 123 --body "Blocks #125"
 ```
 
-### 10. Create Summary Issue Comment
+### 13. Create Summary Issue Comment
 
 Add a summary comment to the parent initiative:
 
@@ -476,7 +513,7 @@ This initiative has been broken down into [N] tasks:
 Generated with 🤖 [claude-grimoire](https://github.com/martythewizard/claude-grimoire)
 ```
 
-### 11. Report Completion
+### 14. Report Completion
 
 Provide user with summary and next steps:
 
