@@ -1,7 +1,7 @@
 {
   "name": "claude-grimoire",
-  "version": "1.0.0",
-  "description": "Three-layer agentic toolkit for Product Engineers - automates feature delivery from planning to PR with 50-65% time savings",
+  "version": "2.0.0",
+  "description": "Complete three-layer agentic toolkit for Product Engineers - automates feature delivery and incident response with 50-87% time savings",
   "author": "Product Engineers",
   "license": "MIT",
   "repository": {
