@@ -344,9 +344,90 @@ Full initiative:
   If no: Provide summary and next steps
 ```
 
+**YAML File Generation (Critical):**
+
+When creating YAML files, the skill MUST follow the exact structure used in `eci-global/initiatives`:
+
+```yaml
+# Required fields (always include)
+schema_version: 2
+name: "Initiative Name"
+description: >-
+  Multi-line description using YAML folded scalar (>-).
+  Second line continues naturally.
+status: active  # One of: active, planning, paused, completed, cancelled
+owner: github-username
+team:
+  - member1
+  - member2
+
+# Optional but recommended
+phase: "current-phase-name"  # Only if applicable
+
+github_project:  # Only if project exists or being created
+  org: eci-global
+  number: 14
+
+workstreams:  # Only if repos and milestones are defined
+  - name: "Workstream Name"
+    repo: org/repo-name
+    milestones:
+      - title: "M1 — Milestone Title"
+        number: 5
+        due: "2026-03-31"  # ISO 8601 date
+        status: deployed
+
+# Optional integrations (only include if data provided)
+jira:
+  project_key: PROJKEY
+  parent_key: PROJ-123
+  board_url: https://...
+  epics:
+    - key: PROJ-456
+      milestone: "Milestone Title"
+      status: Done
+
+confluence:
+  space_key: SPACE
+  page_id: "123456789"
+  page_version: 3
+
+steward:
+  enabled: true
+  last_run: "2026-03-26T22:30:00Z"  # ISO 8601 timestamp
+
+tags:
+  - tag1
+  - tag2
+
+pulse:
+  scan_window: 24h
+  channels:
+    - teams
+    - slack
+  discussion_category: "Category Name"
+```
+
+**YAML Generation Rules:**
+1. **Only include sections with actual data** - Don't include empty optional sections
+2. **Use `>-` for descriptions** - Folded scalar for multi-line text
+3. **ISO 8601 dates** - Format: `YYYY-MM-DD` for dates, `YYYY-MM-DDTHH:MM:SSZ` for timestamps
+4. **Validate status enum** - Must be one of: active, planning, paused, completed, cancelled
+5. **Quote strings with special chars** - Milestone titles with "—" or ":", JIRA keys, etc.
+6. **Match field names exactly** - `github_project` not `githubProject`, `page_id` not `pageId`
+7. **Array formatting** - Use YAML list syntax with hyphens
+8. **No trailing commas** - YAML doesn't use commas like JSON
+
+**File naming convention:**
+- Use kebab-case: `2026-q1-initiative-name.yaml`
+- Include quarter/year prefix if time-bound
+- Be descriptive but concise (under 60 chars)
+
 **Implementation notes:**
 - Default assumption: Projects already exist, just need linking (not creation)
 - YAML creation is for comprehensive initiatives, not every issue
+- Parse examples from eci-global/initiatives repo to understand current patterns
+- Validate generated YAML against schema before committing
 - Can be invoked with parameters to skip interactive questions:
   - `--issue owner/repo#123` (use existing)
   - `--title "..." --body "..."` (create new)
@@ -612,37 +693,81 @@ C) Correct the project number
 - `allowParameters: true` - Accept command-line style parameters to skip interactive questions
 - Projects are rarely created - only when explicitly requested and needed
 
-### YAML Template (optional)
+### YAML Template (matches eci-global/initiatives structure)
 
 File: `.claude-grimoire/templates/initiative.yaml`
+
+**This template matches the actual schema v2 structure used in the eci-global/initiatives repo:**
+
 ```yaml
 schema_version: 2
-name: ""
-description: ""
-status: planning
-owner: ""
-team: []
+name: ""  # Required: Human-readable initiative name
+description: >-  # Required: One or two sentences describing what this delivers
+  
+status: planning  # Required: One of: active, planning, paused, completed, cancelled
+phase: ""  # Optional: Current phase (e.g., "operational-go-live", "implementation")
+owner: ""  # Required: GitHub username of initiative owner
+team:  # Optional: List of GitHub usernames on the team
+  - ""
 
-github_project:
-  org: ""
-  number: 0
+github_project:  # Optional: GitHub Project v2 integration
+  org: ""  # Organization name (e.g., "eci-global")
+  number: 0  # Project number
+  id: ""  # Optional: Project node ID for GraphQL
 
-workstreams: []
+progress:  # Optional: Progress tracking metrics
+  github_issues: ""  # e.g., "76/76"
+  jira_epics: ""  # e.g., "6/6"
+  jira_stories: ""  # e.g., "65/65"
+  tests: ""  # e.g., "471/471"
+  infrastructure: ""  # e.g., "deployed", "in-progress"
+  last_reconciled: ""  # ISO 8601 date (e.g., "2026-03-23")
 
-jira:
-  project_key: ""
-  parent_key: ""
-  epics: []
+workstreams:  # Optional: Logical groupings of work across repos
+  - name: ""  # Workstream name
+    repo: ""  # Full repo path (e.g., "eci-global/repo-name")
+    milestones:  # Milestones within this workstream
+      - title: ""  # Milestone title (as it appears in GitHub)
+        number: 0  # Milestone number in the repo
+        due: ""  # ISO 8601 date (e.g., "2026-03-31")
+        status: ""  # e.g., "deployed", "code-complete", "in-progress"
 
-confluence:
-  space_key: ""
-  page_id: ""
+jira:  # Optional: JIRA tracking integration
+  project_key: ""  # JIRA project key (e.g., "ITPLAT01")
+  parent_key: ""  # Parent epic/initiative key (e.g., "ITPMO01-1540")
+  board_url: ""  # Optional: JIRA board URL
+  epics:  # Optional: List of JIRA epics
+    - key: ""  # Epic key (e.g., "ITPLAT01-1987")
+      milestone: ""  # Optional: Which workstream milestone this maps to
+      status: ""  # Epic status (e.g., "Done", "In Progress")
 
-steward:
-  enabled: true
+confluence:  # Optional: Confluence documentation
+  space_key: ""  # Confluence space key
+  page_id: ""  # Confluence page ID (numeric string)
+  page_version: 0  # Optional: Page version number
 
-tags: []
+steward:  # Optional: Steward monitoring integration
+  enabled: true  # Whether steward monitoring is enabled
+  last_run: ""  # Optional: ISO 8601 timestamp of last steward run
+
+tags:  # Optional: Tags for categorization and filtering
+  - ""
+
+pulse:  # Optional: Pulse communication settings
+  scan_window: ""  # e.g., "24h"
+  channels:  # Communication channels
+    - ""
+  discussion_category: ""  # Category for discussions
 ```
+
+**Field notes based on actual eci-global/initiatives examples:**
+- Use `>-` for multi-line descriptions (YAML folded scalar)
+- Dates should be ISO 8601 format: `YYYY-MM-DD` for dates, `YYYY-MM-DDTHH:MM:SSZ` for timestamps
+- `status` values must be one of the enum: `active`, `planning`, `paused`, `completed`, `cancelled`
+- `workstreams[].milestones[].status` is freeform (e.g., "deployed", "code-complete", "in-progress")
+- `progress` section tracks various metrics - fields are initiative-specific
+- All optional sections can be omitted entirely if not needed
+- Template shows structure; skills should only include sections that have actual data
 
 ## Migration Strategy
 
@@ -655,12 +780,17 @@ tags: []
 6. **Testing:** Verify all input types resolve correctly
 
 ### Phase 2: Update initiative-creator
-1. Add "creation mode" selection
-2. Implement YAML generation (schema v2)
-3. Add GitHub Project creation option
-4. Add optional field gathering (JIRA, Confluence, etc.)
-5. Implement YAML commit workflow
-6. **Testing:** Create initiatives with various combinations of options
+1. Add "creation mode" selection (issue/linking/YAML creation)
+2. Add parameter parsing for direct invocation
+3. Implement YAML generation following eci-global/initiatives structure:
+   - Fetch example YAMLs from repo for reference
+   - Use exact field names and structure from schema v2
+   - Implement validation against actual repo examples
+   - Only include sections with data (no empty optionals)
+4. Add GitHub Project creation option (rare case)
+5. Add optional field gathering (JIRA, Confluence, steward, pulse, tags)
+6. Implement YAML commit workflow to eci-global/initiatives
+7. **Testing:** Create initiatives with various combinations, validate YAML structure matches repo examples
 
 ### Phase 3: Update initiative-breakdown
 1. Add flexible input handling
@@ -739,6 +869,36 @@ Verify: Issue exists, no initiative references
 Input: Create PR for task linked to initiative
 Expected: PR description includes initiative reference
 Verify: PR contains "Part of initiative: <name>"
+```
+
+**Test Case 6: YAML structure validation**
+```
+Input: Create full YAML initiative with all optional sections
+Expected: Generated YAML matches eci-global/initiatives structure exactly
+Verify:
+  - schema_version: 2
+  - description uses >- folded scalar
+  - Dates are ISO 8601 format
+  - workstreams.milestones has title, number, due, status
+  - jira.epics has key, milestone, status
+  - Only includes sections with data (no empty optionals)
+  - Field names match exactly (snake_case)
+  - YAML parses without errors
+  - Structure matches examples from eci-global/initiatives repo
+```
+
+**Test Case 7: Issue creation with parameter passing**
+```
+Input: /initiative-creator --title "Fix auth bug" --project eci-global#14
+Expected: Issue created and linked to project without interactive prompts
+Verify: Issue exists, linked to project #14, no YAML created
+```
+
+**Test Case 8: Link existing issue to initiative**
+```
+Input: /initiative-creator --issue eci-global/repo#123 --initiative path/to/yaml
+Expected: Existing issue linked to initiative
+Verify: Issue comment added referencing YAML, no new issue created
 ```
 
 ## Dependencies
