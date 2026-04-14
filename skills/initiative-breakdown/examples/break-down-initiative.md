@@ -69,7 +69,7 @@ Creating issues in eci-global/coralogix...
 [M4] Create Data Spaces migration path → #461 (milestone: M4, project: #8)
 [M4] Write migration guide → #462 (milestone: M4, project: #8)
 
-✅ Created 14 tasks across 4 milestones
+✅ Created 13 tasks across 4 milestones
 
 All tasks:
   - Assigned to appropriate milestones
