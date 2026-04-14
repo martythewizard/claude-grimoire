@@ -366,6 +366,165 @@ The agent will:
 3. Make GraphQL call to fetch project
 4. Merge project data into response
 
+## Workstream Context
+
+A workstream is a logical grouping within an initiative that maps to a specific repository and set of milestones.
+
+### Workstream Identifier Format
+
+```
+initiative:<yaml-name> workstream:<workstream-name>
+```
+
+Examples:
+- `initiative:2026-q1-ai-cost workstream:S3 Data Lake`
+- `initiatives/file.yaml workstream:Intelligence System`
+
+### Workstream Resolution Process
+
+1. **Parse identifier:**
+   - Extract initiative reference
+   - Extract workstream name
+
+2. **Fetch initiative:**
+   - Load YAML file
+   - Validate schema
+
+3. **Find workstream:**
+   - Search `workstreams` array for name match
+   - Return error if not found
+
+4. **Enrich workstream data:**
+   - Fetch milestone details from repo
+   - Get issue counts per milestone
+   - Calculate workstream progress
+
+### Workstream Context Response
+
+```json
+{
+  "success": true,
+  "context": {
+    "type": "workstream",
+    "metadata": {
+      "name": "S3 Unified FOCUS Data Lake",
+      "repo": "eci-global/one-cloud-cloud-costs",
+      "initiative": "2026 Q1 - AI Cost Intelligence Platform",
+      "initiative_yaml": "initiatives/2026-q1-ai-cost-intelligence-platform.yaml"
+    },
+    "milestones": [
+      {
+        "title": "M0 — S3 Unified FOCUS Data Lake (DataSync)",
+        "number": 5,
+        "due": "2026-03-31",
+        "status": "deployed",
+        "state": "closed",
+        "url": "https://github.com/eci-global/one-cloud-cloud-costs/milestone/5",
+        "open_issues": 0,
+        "closed_issues": 12,
+        "issues": [
+          {
+            "number": 123,
+            "title": "Implement DataSync pipeline",
+            "state": "closed",
+            "url": "https://github.com/eci-global/one-cloud-cloud-costs/issues/123"
+          }
+        ]
+      }
+    ],
+    "progress": {
+      "total_milestones": 2,
+      "completed_milestones": 2,
+      "total_issues": 20,
+      "closed_issues": 20,
+      "percentage": 100
+    }
+  }
+}
+```
+
+## Milestone Context
+
+### Milestone Identifier Format
+
+```
+owner/repo milestone:"<milestone-title>"
+owner/repo milestone:<milestone-number>
+```
+
+Examples:
+- `eci-global/one-cloud-cloud-costs milestone:"M0 — S3 Unified FOCUS Data Lake"`
+- `eci-global/one-cloud-cloud-costs milestone:5`
+
+### Milestone Resolution Process
+
+1. **Parse identifier:**
+   - Extract owner/repo
+   - Extract milestone reference (title or number)
+
+2. **Fetch milestone:**
+   - If number: Direct API call
+   - If title: List milestones and filter by title
+
+3. **Fetch milestone issues:**
+   - Get all issues assigned to milestone
+   - Include state, labels, assignees
+
+4. **Check for workstream association:**
+   - Search eci-global/initiatives for YAMLs referencing this milestone
+   - Include initiative context if found
+
+### Milestone Context Response
+
+```json
+{
+  "success": true,
+  "context": {
+    "type": "milestone",
+    "metadata": {
+      "title": "M0 — S3 Unified FOCUS Data Lake (DataSync)",
+      "number": 5,
+      "repo": "eci-global/one-cloud-cloud-costs",
+      "due_on": "2026-03-31T00:00:00Z",
+      "state": "closed",
+      "url": "https://github.com/eci-global/one-cloud-cloud-costs/milestone/5",
+      "description": "Build unified FOCUS-compliant data lake in S3 with DataSync integration",
+      "created_at": "2026-01-10T09:00:00Z",
+      "updated_at": "2026-03-31T18:00:00Z",
+      "closed_at": "2026-03-31T18:00:00Z"
+    },
+    "issues": {
+      "open_count": 0,
+      "closed_count": 12,
+      "items": [
+        {
+          "number": 123,
+          "title": "Implement DataSync pipeline",
+          "state": "closed",
+          "url": "https://github.com/eci-global/one-cloud-cloud-costs/issues/123",
+          "labels": ["infrastructure", "datasync"],
+          "assignees": ["tedgar"],
+          "created_at": "2026-01-15T10:00:00Z",
+          "closed_at": "2026-02-20T16:30:00Z"
+        }
+      ]
+    },
+    "related_workstream": {
+      "initiative": "2026 Q1 - AI Cost Intelligence Platform",
+      "initiative_yaml": "initiatives/2026-q1-ai-cost-intelligence-platform.yaml",
+      "workstream": "S3 Unified FOCUS Data Lake",
+      "detected": "Milestone found in initiative YAML workstreams"
+    },
+    "related_project": {
+      "org": "eci-global",
+      "number": 14,
+      "url": "https://github.com/orgs/eci-global/projects/14",
+      "detected": "Initiative YAML contains github_project reference"
+    }
+  }
+}
+```
+
 ### Depth Levels
 
 **Shallow** (fastest, < 5s)
