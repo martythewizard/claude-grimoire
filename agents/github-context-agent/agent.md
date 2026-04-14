@@ -643,7 +643,11 @@ Which did you mean?
 
 ## Output Contract
 
-Returns a structured context object:
+Returns a structured context object. Format varies by type.
+
+### Issue Context
+
+For `type: "issue"` requests:
 
 ```json
 {
@@ -731,6 +735,7 @@ Returns a structured context object:
     }
   ],
   "requestMetadata": {
+    "type": "issue",
     "depth": "standard",
     "duration": "8.5s",
     "apiCallsUsed": 12,
@@ -738,6 +743,265 @@ Returns a structured context object:
   }
 }
 ```
+
+### Initiative Context (NEW)
+
+For `type: "initiative"` requests:
+
+```json
+{
+  "success": true,
+  "context": {
+    "type": "initiative",
+    "metadata": {
+      "schema_version": 2,
+      "name": "string",
+      "description": "string",
+      "status": "active | planning | paused | completed | cancelled",
+      "phase": "string (optional)",
+      "owner": "github-username",
+      "team": ["username1", "username2"],
+      "tags": ["tag1", "tag2"]
+    },
+    "github_project": {
+      "org": "string",
+      "number": 0,
+      "id": "string (optional)",
+      "url": "string",
+      "title": "string",
+      "state": "OPEN | CLOSED",
+      "items_count": 0,
+      "closed_items_count": 0,
+      "progress_percentage": 0
+    },
+    "workstreams": [
+      {
+        "name": "string",
+        "repo": "owner/repo",
+        "milestones": [
+          {
+            "title": "string",
+            "number": 0,
+            "due": "ISO 8601 date",
+            "status": "string (from YAML)",
+            "state": "open | closed",
+            "url": "string",
+            "open_issues": 0,
+            "closed_issues": 0
+          }
+        ]
+      }
+    ],
+    "progress": {
+      "github_issues": "string",
+      "jira_epics": "string",
+      "jira_stories": "string",
+      "tests": "string",
+      "infrastructure": "string",
+      "last_reconciled": "ISO 8601 date"
+    },
+    "jira": {
+      "project_key": "string",
+      "parent_key": "string",
+      "board_url": "string",
+      "epics": [
+        {
+          "key": "string",
+          "milestone": "string",
+          "status": "string"
+        }
+      ]
+    },
+    "confluence": {
+      "space_key": "string",
+      "page_id": "string",
+      "page_version": 0,
+      "page_url": "string"
+    },
+    "steward": {
+      "enabled": true,
+      "last_run": "ISO 8601 timestamp"
+    },
+    "pulse": {
+      "scan_window": "string",
+      "channels": ["string"],
+      "discussion_category": "string"
+    },
+    "yaml_path": "string",
+    "yaml_url": "string"
+  },
+  "requestMetadata": {
+    "type": "initiative",
+    "depth": "shallow | standard | deep",
+    "duration": "string",
+    "apiCallsUsed": 0,
+    "rateLimitRemaining": 0
+  }
+}
+```
+
+### Project Context (NEW)
+
+For `type: "project"` requests:
+
+```json
+{
+  "success": true,
+  "context": {
+    "type": "project",
+    "metadata": {
+      "id": "string (GraphQL node ID)",
+      "number": 0,
+      "org": "string (or null for repo project)",
+      "repo": "owner/repo (or null for org project)",
+      "title": "string",
+      "url": "string",
+      "shortDescription": "string",
+      "public": false,
+      "closed": false,
+      "createdAt": "ISO 8601 timestamp",
+      "updatedAt": "ISO 8601 timestamp"
+    },
+    "items": {
+      "total": 0,
+      "open": 0,
+      "closed": 0,
+      "by_repo": {
+        "owner/repo": {
+          "total": 0,
+          "open": 0,
+          "closed": 0,
+          "issues": [],
+          "pull_requests": []
+        }
+      },
+      "by_milestone": {
+        "Milestone Title": 0,
+        "No milestone": 0
+      }
+    },
+    "progress": {
+      "percentage": 0,
+      "completed_items": 0,
+      "total_items": 0
+    },
+    "related_initiative": {
+      "yaml_path": "string (if detected)",
+      "name": "string",
+      "detected": "string (explanation)"
+    }
+  },
+  "requestMetadata": {
+    "type": "project",
+    "depth": "shallow | standard | deep",
+    "duration": "string",
+    "apiCallsUsed": 0,
+    "rateLimitRemaining": 0
+  }
+}
+```
+
+### Workstream Context (NEW)
+
+For `type: "workstream"` requests:
+
+```json
+{
+  "success": true,
+  "context": {
+    "type": "workstream",
+    "metadata": {
+      "name": "string",
+      "repo": "owner/repo",
+      "initiative": "string (initiative name)",
+      "initiative_yaml": "string (path)"
+    },
+    "milestones": [
+      {
+        "title": "string",
+        "number": 0,
+        "due": "ISO 8601 date",
+        "status": "string",
+        "state": "open | closed",
+        "url": "string",
+        "open_issues": 0,
+        "closed_issues": 0
+      }
+    ],
+    "progress": {
+      "total_milestones": 0,
+      "completed_milestones": 0,
+      "total_issues": 0,
+      "closed_issues": 0,
+      "percentage": 0
+    }
+  },
+  "requestMetadata": {
+    "type": "workstream",
+    "depth": "shallow | standard | deep",
+    "duration": "string",
+    "apiCallsUsed": 0,
+    "rateLimitRemaining": 0
+  }
+}
+```
+
+### Milestone Context (NEW)
+
+For `type: "milestone"` requests:
+
+```json
+{
+  "success": true,
+  "context": {
+    "type": "milestone",
+    "metadata": {
+      "title": "string",
+      "number": 0,
+      "repo": "owner/repo",
+      "due_on": "ISO 8601 date",
+      "state": "open | closed",
+      "url": "string",
+      "description": "string",
+      "created_at": "ISO 8601 timestamp",
+      "updated_at": "ISO 8601 timestamp",
+      "closed_at": "ISO 8601 timestamp (if closed)"
+    },
+    "issues": {
+      "open_count": 0,
+      "closed_count": 0,
+      "items": []
+    },
+    "related_workstream": {
+      "initiative": "string",
+      "initiative_yaml": "string",
+      "workstream": "string",
+      "detected": "string"
+    },
+    "related_project": {
+      "org": "string",
+      "number": 0,
+      "url": "string",
+      "detected": "string"
+    }
+  },
+  "requestMetadata": {
+    "type": "milestone",
+    "depth": "shallow | standard | deep",
+    "duration": "string",
+    "apiCallsUsed": 0,
+    "rateLimitRemaining": 0
+  }
+}
+```
+
+### PR Context
+
+For `type: "pr"` requests, follows similar structure to Issue Context with PR-specific fields (state, reviews, checks).
+
+### Repo Context
+
+For `type: "repo"` requests, includes repository metadata, branches, tags, CODEOWNERS, and other repository-level information.
 
 ## Error Handling
 
