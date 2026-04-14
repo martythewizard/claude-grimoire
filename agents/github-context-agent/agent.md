@@ -1564,6 +1564,57 @@ Logs include:
 - Cache performance
 - Error details
 
+## Migration from v1.0.0
+
+This version adds initiative, project, workstream, and milestone support. Existing code continues to work unchanged.
+
+### Breaking Changes
+
+None. All existing `type` values (`issue`, `pr`, `repo`) remain supported with identical behavior.
+
+### New Features
+
+- `type: "initiative"` - Fetch initiative YAML from eci-global/initiatives
+- `type: "project"` - Fetch GitHub Projects v2 data via GraphQL
+- `type: "workstream"` - Scope to specific workstream within initiative
+- `type: "milestone"` - Fetch milestone with related initiative context
+- Automatic input type detection
+- Ambiguous input clarification
+- Initiative-project linking (when YAML contains github_project)
+- Workstream-milestone association
+
+### Migration Path
+
+**Skills using github-context-agent:**
+
+1. Continue using existing `type: "issue"` for issue context
+2. Add `type: "initiative"` when user provides YAML path
+3. Add `type: "project"` when user provides project number
+4. Let agent auto-detect type by omitting `type` field
+
+**Example:**
+```json
+// Old (still works)
+{
+  "type": "issue",
+  "identifier": "owner/repo#123"
+}
+
+// New (auto-detection)
+{
+  "identifier": "owner/repo#123"
+  // Agent detects type: "issue"
+}
+
+// New (initiative)
+{
+  "type": "initiative",
+  "identifier": "initiatives/2026-q1-ai-cost.yaml"
+}
+```
+
+No changes required to existing skills unless they want to use new features.
+
 ## Future Enhancements
 
 - **Semantic search** - Find similar issues by description
