@@ -60,36 +60,94 @@ Automate the entire feature delivery pipeline:
 
 ### Phase 1: Planning
 
-**Goal:** Understand requirements and create initiative
+**Goal:** Understand requirements and gather context
 
 **Input:** High-level feature description from user
 
 **Process:**
 
-1. **Assess if initiative exists:**
-   ```
-   Ask user: "Is there an existing GitHub initiative/issue for this feature?"
-   
-   If yes: 
-     - Get issue number
-     - Invoke github-context-agent to fetch details
-     - Skip to Phase 2
-   
-   If no:
-     - Invoke /initiative-creator skill
-     - Wait for initiative to be created
-     - Continue to Phase 2
-   ```
+**Step 1: Assess User Input**
 
-2. **Validate initiative readiness:**
-   - Goals clearly defined?
-   - Success metrics specified?
-   - Scope boundaries established?
-   - Technical approach outlined?
-   
-   If incomplete: Loop back to refine with user
+```
+Check what user provided:
+  - Initiative YAML path or name
+  - GitHub Project URL or number
+  - Workstream reference
+  - Milestone reference
+  - Existing issue number
+  - Just a feature description
 
-**Output:** Well-defined initiative with clear requirements
+If specific reference provided:
+  → Use github-context-agent to fetch context
+  
+If just feature description:
+  → Ask user about scope
+```
+
+**Step 2: Ask About Scope**
+
+```
+If no specific reference provided:
+  Ask user: "What's the scope for this feature?"
+  
+  A) Part of an existing initiative (provide YAML/project/workstream)
+  B) New initiative (create comprehensive YAML)
+  C) Standalone task (no initiative needed)
+  
+  If A: Get reference, invoke github-context-agent
+  If B: Invoke /initiative-creator --yaml
+  If C: Continue with standalone workflow
+```
+
+**Step 3: Invoke github-context-agent**
+
+```
+If user provided reference:
+  Call github-context-agent with:
+    identifier: <user-reference>
+    depth: "standard"
+    include: {
+      yaml: true,
+      project: true,
+      workstreams: true,
+      milestones: true
+    }
+  
+  Agent returns context with type:
+    - initiative
+    - project
+    - workstream
+    - milestone
+    - issue
+```
+
+**Step 4: Route to Appropriate Workflow**
+
+```
+Based on context type:
+  
+  initiative:
+    → Full initiative workflow
+    → Phases: Architecture (if complex) → Breakdown → Plan Review → Implementation
+    
+  project:
+    → Project workflow
+    → Phases: Breakdown (fill gaps) → Plan Review → Implementation
+    
+  workstream:
+    → Workstream workflow
+    → Phases: Breakdown (scoped) → Plan Review → Implementation
+    
+  milestone:
+    → Milestone workflow
+    → Phases: Create tasks → Implementation
+    
+  standalone (no context):
+    → Simple workflow
+    → Phases: Create issue → Implementation (skip breakdown/review)
+```
+
+**Output:** Context object with type and organizational structure
 
 ---
 
