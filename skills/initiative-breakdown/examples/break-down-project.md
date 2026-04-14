@@ -41,5 +41,5 @@ Creating tasks:
   - Add API documentation → #891
   
 Linking to project...
-✅ Created 2 tasks, linked to project eci-global#14
+✅ Created 2 tasks, linked to project eci-global#22
 ```
