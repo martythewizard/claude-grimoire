@@ -525,6 +525,102 @@ Examples:
 }
 ```
 
+## Input Type Detection
+
+The agent automatically detects the type from the identifier format. When ambiguous, it asks the user to clarify.
+
+### Detection Rules
+
+**Priority order (first match wins):**
+
+1. **Explicit type provided** - Use `type` field if present
+2. **URL patterns:**
+   - `https://github.com/*/issues/*` → issue
+   - `https://github.com/*/pull/*` → pr
+   - `https://github.com/orgs/*/projects/*` → project
+   - `https://github.com/*/projects/*` → project (repo project)
+3. **Format patterns:**
+   - `owner/repo#123` → issue (or PR if #123 is a PR)
+   - `org#123` → project (organization project)
+   - `initiatives/*.yaml` or YAML filename → initiative
+   - `milestone:"..."` or `milestone:N` → milestone
+   - `workstream:...` → workstream
+4. **Keyword patterns:**
+   - Contains "initiative:" → initiative
+   - Contains "workstream:" → workstream
+   - Contains "milestone:" → milestone
+5. **Ambiguous** - Ask user
+
+### Ambiguous Input Examples
+
+**Example 1: Number could be issue or project**
+
+Input: `eci-global/repo#14`
+
+Could be:
+- Issue #14 in eci-global/repo
+- Project #14 (if "project" keyword intended)
+
+Detection: Check if issue #14 exists. If not, check for project.
+
+**Example 2: Name could match multiple initiatives**
+
+Input: `cost intelligence`
+
+Matches:
+- `2026-q1-ai-cost-intelligence-platform.yaml`
+- `2025-q4-cost-optimization.yaml`
+
+Response: Ask user to choose from list
+
+**Example 3: Project number appears in both project and initiative**
+
+Input: `14`
+
+Could be:
+- Project eci-global#14
+- Initiative that references project 14
+
+Response: Ask user to clarify
+
+### Clarification Flow
+
+When input is ambiguous, return error with options:
+
+```json
+{
+  "success": false,
+  "error": {
+    "type": "AmbiguousInput",
+    "message": "Input '14' could refer to multiple items",
+    "options": [
+      {
+        "type": "project",
+        "identifier": "eci-global#14",
+        "description": "GitHub Project: 2026 Q1 - AI Cost Intelligence Platform"
+      },
+      {
+        "type": "initiative",
+        "identifier": "initiatives/2026-q1-ai-cost-intelligence-platform.yaml",
+        "description": "Initiative YAML (references project 14)"
+      }
+    ],
+    "suggestion": "Please specify which you meant:\nA) GitHub Project eci-global#14\nB) Initiative YAML (includes project as part of initiative)",
+    "retryable": true
+  }
+}
+```
+
+The calling skill should then ask the user:
+
+```
+I found multiple matches for "14":
+A) GitHub Project eci-global#14 - 2026 Q1 - AI Cost Intelligence Platform
+B) Initiative YAML - 2026 Q1 - AI Cost Intelligence Platform (references project 14)
+
+Which did you mean?
+```
+
 ### Depth Levels
 
 **Shallow** (fastest, < 5s)
