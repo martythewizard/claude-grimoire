@@ -561,250 +561,6 @@ Parameters are validated before execution:
 
 Validation failures return clear error messages with suggestions.
 
-### 2. Goals and Success Metrics
-
-Define what success looks like:
-
-**Questions to ask:**
-- What are the primary goals of this initiative?
-- How will you measure success? (quantitative metrics)
-- What does "done" look like?
-- What would make this a complete success vs. partial success?
-
-**Example metrics:**
-- Performance: "Reduce page load time to under 2 seconds"
-- Adoption: "10% of users adopt new feature within first month"
-- Quality: "Zero critical security vulnerabilities"
-- Completion: "All authentication flows support SSO"
-
-### 3. Scope and Constraints
-
-Define boundaries and limitations:
-
-**Questions to ask:**
-- What's explicitly in scope for this initiative?
-- What's explicitly out of scope?
-- Are there any technical constraints? (performance, compatibility, security)
-- Are there any resource constraints? (timeline, team size, budget)
-- Are there any regulatory or compliance requirements?
-
-**Present multiple choice when helpful:**
-Example: "Does this need to be backwards compatible?"
-- A) Full backwards compatibility required
-- B) Breaking changes acceptable with migration path
-- C) Complete rewrite, no compatibility needed
-
-### 4. Dependencies and Blockers
-
-Identify what must happen first:
-
-**Questions to ask:**
-- Does this depend on any other work being completed first?
-- Are there any known blockers or risks?
-- Do we need input or approval from other teams?
-- Are there any external dependencies? (third-party APIs, infrastructure)
-
-**Check GitHub for dependencies:**
-- Search for related open issues
-- Check for recent architectural decisions
-- Look for ongoing work that might conflict
-
-### 5. Timeline and Milestones
-
-Estimate effort and plan phases:
-
-**Questions to ask:**
-- What's the target completion date?
-- Are there any intermediate milestones or checkpoints?
-- Can this be broken into phases?
-- What's the minimum viable scope for a first release?
-
-**Suggest milestone structure:**
-Example for a 3-month initiative:
-- Phase 1 (Week 1-2): Design and planning
-- Phase 2 (Week 3-8): Core implementation
-- Phase 3 (Week 9-10): Testing and refinement
-- Phase 4 (Week 11-12): Documentation and rollout
-
-### 6. Complexity Assessment
-
-Determine if visual planning is needed:
-
-**Assess complexity based on:**
-- Multiple repositories involved?
-- New architecture or abstractions required?
-- UI/UX design needed?
-- Complex data flows or integrations?
-- Multiple teams coordinating?
-
-**If complex (any of above):**
-> "This initiative involves [complexity factors]. Would you like me to create a visual PRD with architecture diagrams and UI mockups? This will help communicate the plan to stakeholders and ensure alignment before implementation."
->
-> Options:
-> - A) Yes, create comprehensive visual PRD
-> - B) Just architecture diagrams, no UI mockups
-> - C) Skip visual PRD, proceed with text description
-
-**If they choose A or B:** Invoke the `visual-prd` skill with gathered context
-
-### 7. Generate Initiative Description
-
-Create comprehensive GitHub initiative description:
-
-**Structure:**
-
-```markdown
-# [Initiative Title]
-
-## Overview
-[2-3 sentence summary of what this initiative aims to achieve]
-
-## Problem Statement
-[What problem are we solving? Why does this matter?]
-
-## Goals
-- [Primary goal 1]
-- [Primary goal 2]
-- [Primary goal 3]
-
-## Success Metrics
-- [Metric 1]: [Target]
-- [Metric 2]: [Target]
-- [Metric 3]: [Target]
-
-## Scope
-
-### In Scope
-- [What we will do]
-- [What we will deliver]
-
-### Out of Scope
-- [What we won't do]
-- [What we're explicitly deferring]
-
-## Technical Approach
-[High-level overview of how we'll implement this]
-[Link to visual PRD if created]
-
-## Dependencies
-- [Dependency 1] - [Status]
-- [Dependency 2] - [Status]
-
-## Constraints
-- [Technical constraint 1]
-- [Resource constraint 2]
-- [Timeline constraint 3]
-
-## Timeline
-- **Target Start:** [Date]
-- **Target Completion:** [Date]
-
-### Milestones
-- [ ] Phase 1: [Name] - [Target Date]
-- [ ] Phase 2: [Name] - [Target Date]
-- [ ] Phase 3: [Name] - [Target Date]
-
-## Repositories Affected
-- `owner/repo1` - [What will change]
-- `owner/repo2` - [What will change]
-
-## Stakeholders
-- **Owner:** @username
-- **Contributors:** @user1, @user2
-- **Reviewers:** @reviewer1
-
-## Related Work
-- Related to #issue-number
-- Depends on #issue-number
-- Blocks #issue-number
-
-## Risk Assessment
-- **[Risk 1]**: [Mitigation strategy]
-- **[Risk 2]**: [Mitigation strategy]
-
-## Questions and Unknowns
-- [Open question 1]
-- [Open question 2]
-
----
-Created with 🤖 [claude-grimoire](https://github.com/martythewizard/claude-grimoire)
-```
-
-### 8. Review and Refine
-
-Present the generated description to the user:
-
-> "Here's the initiative description I've generated. Please review each section:
->
-> [Show description section by section]
->
-> Does this accurately capture your intent? Any sections need adjustment?"
-
-**Be ready to iterate:**
-- Adjust scope based on feedback
-- Refine success metrics
-- Add missing dependencies
-- Clarify technical approach
-
-### 9. Create GitHub Initiative
-
-Once the user approves the description:
-
-```bash
-# Create the initiative
-gh issue create \
-  --title "[Initiative Title]" \
-  --body "$(cat initiative-description.md)" \
-  --label "initiative,planning" \
-  --assignee @me
-```
-
-**Apply appropriate labels:**
-- `initiative` (required)
-- `planning` (for initiatives in planning phase)
-- `enhancement` (for new features)
-- `refactor` (for architectural improvements)
-- `infrastructure` (for platform/tooling work)
-- Custom labels based on repository conventions
-
-**Set milestone if applicable:**
-```bash
-gh issue edit [number] --milestone "Q2 2026"
-```
-
-### 10. Link Related Work
-
-Connect to existing issues and PRs:
-
-```bash
-# Link dependencies
-gh issue comment [initiative-number] --body "Depends on #123"
-
-# Link related work
-gh issue comment [initiative-number] --body "Related to #456"
-```
-
-### 11. Report Completion
-
-Provide the user with:
-- Initiative URL
-- Summary of what was created
-- Next steps suggestion
-
-**Example:**
-> ✅ **Initiative created successfully!**
->
-> **URL:** https://github.com/owner/repo/issues/123
-> **Title:** Add JWT-based authentication system
-> **Labels:** initiative, planning, enhancement, security
-> **Milestone:** Q2 2026
->
-> **What's next?**
-> 1. Review and refine the initiative description
-> 2. Use `/initiative-breakdown` to create actionable tasks
-> 3. Optionally create visual PRD if not done yet
-> 4. Share with stakeholders for feedback
-
 ## Configuration
 
 The skill respects configuration from `.claude-grimoire/config.json`:
@@ -813,16 +569,40 @@ The skill respects configuration from `.claude-grimoire/config.json`:
 {
   "github": {
     "org": "your-org",
-    "defaultRepos": ["repo1", "repo2"]
+    "defaultRepos": ["repo1", "repo2"],
+    "initiativesRepo": "eci-global/initiatives",
+    "initiativesPath": "initiatives/",
+    "defaultOrg": "eci-global"
   },
   "initiativeCreator": {
-    "defaultLabels": ["initiative", "planning"],
-    "requireSuccessMetrics": true,
-    "requireTimeline": true,
-    "autoCreateVisualPRD": false
+    "templatePath": ".claude-grimoire/templates/initiative.yaml",
+    "defaultMode": "issue",
+    "assumeProjectExists": true,
+    "promptForOptionalFields": true,
+    "allowParameters": true,
+    "autoCreateVisualPRD": false,
+    "defaultLabels": [],
+    "requireConfirmation": false
   }
 }
 ```
+
+**Configuration fields:**
+
+- `defaultMode` - Default mode when no parameters: "issue" | "linking" | "full"
+  - Recommended: "issue" (start simple)
+- `assumeProjectExists` - Ask to link existing project before creating new
+  - Recommended: true (projects rarely need creation)
+- `promptForOptionalFields` - Ask about JIRA/Confluence/tags in full mode
+  - Recommended: true
+- `allowParameters` - Enable parameter passing
+  - Recommended: true
+- `autoCreateVisualPRD` - Automatically invoke visual-prd for complex initiatives
+  - Default: false (ask user)
+- `templatePath` - Path to initiative YAML template
+  - Default: uses skills/initiative-creator/templates/initiative-template.yaml
+- `requireConfirmation` - Ask before committing YAML
+  - Default: false (commit automatically after validation)
 
 ## Tips for Great Initiatives
 
@@ -863,66 +643,183 @@ The skill respects configuration from `.claude-grimoire/config.json`:
 
 ## Examples
 
-### Example 1: Simple Feature Initiative
+### Example 1: Standalone Issue (Quick Bug Fix)
 
-**User:** "I need to add dark mode to our app"
+**User:** "Create an issue for fixing the login timeout"
 
-**Skill response:**
-> What problem are you trying to solve with dark mode?
+**Skill:**
+```
+What would you like to create?
+A) Standalone issue
+B) Issue linked to existing initiative or project
+C) New comprehensive initiative with YAML file
 
-**User:** "Users complain about eye strain when using the app at night"
+User: A
 
-**Skill response:**
-> Who are the primary users affected by this?
+Title?
+> Fix login timeout error
 
-**User:** "All mobile app users, particularly those using the app in the evening"
+Description?
+> Users are being logged out after 5 minutes instead of 30
 
-**Skill continues interview...**
+Repository?
+> eci-global/auth-service
 
-**Result:** Initiative created with clear scope (theme toggle + system preference detection), success metrics (adoption rate, user satisfaction), 2-week timeline
+Labels?
+> bug, high-priority
 
----
+Creating issue...
+✅ Issue created: https://github.com/eci-global/auth-service/issues/456
+```
 
-### Example 2: Complex Multi-Repo Initiative
-
-**User:** "We need to add SSO authentication across all our services"
-
-**Skill response:**
-> What repositories will be involved?
-
-**User:** "Web app, mobile app, admin dashboard, and API gateway"
-
-**Skill response:**
-> This initiative spans multiple repositories and involves authentication architecture. Would you like me to create a visual PRD with architecture diagrams? This will help align stakeholders on the approach.
-
-**User:** "Yes, architecture diagrams would be helpful"
-
-**Skill response:** 
-> *[Invokes visual-prd skill to create diagrams]*
-> 
-> I've created a visual PRD with the SSO architecture. Let me now create the initiative...
-
-**Result:** Initiative with linked visual PRD, phased rollout plan (API gateway first, then services), clear dependencies between repos
+**Result:** Standalone issue created in < 1 minute
 
 ---
 
-### Example 3: Infrastructure Initiative
+### Example 2: Link Existing Issue to Project
 
-**User:** "We need to migrate from Postgres to Aurora"
+**User:** "/initiative-creator --issue eci-global/repo#123 --project eci-global#14"
 
-**Skill response:**
-> What's driving this migration?
+**Skill:**
+```
+Fetching issue eci-global/repo#123...
+Verifying project eci-global#14...
+Linking issue to project...
+✅ Linked successfully
+```
 
-**User:** "Need better scaling and automatic failover for production"
+**Result:** Issue #123 now appears in Project #14
 
-**Skill response:**
-> What constraints do we have? Does this need zero-downtime migration?
+---
 
-**User:** "Yes, we can't have any downtime. We process payments 24/7"
+### Example 3: Create Issue and Link to Initiative
 
-**Skill continues assessing risks and dependencies...**
+**User:** "Create a task for implementing rate limiting and add it to the cost intelligence initiative"
 
-**Result:** Initiative with phased migration plan, rollback procedures, success metrics (migration time, downtime = 0), comprehensive risk assessment
+**Skill:**
+```
+What would you like to create?
+A) Standalone issue
+B) Issue linked to existing initiative or project
+C) New comprehensive initiative with YAML file
+
+User: B
+
+Create new issue or use existing?
+A) Create new
+B) Use existing
+
+User: A
+
+Title?
+> Implement rate limiting for API endpoints
+
+Description?
+> Add rate limiting to prevent cost overruns from runaway processes
+
+Repository?
+> eci-global/api-gateway
+
+What should this be linked to?
+A) GitHub Project
+B) Initiative YAML
+C) Both
+
+User: C
+
+Initiative YAML path or search term?
+> ai cost intelligence
+
+Searching initiatives...
+Found: initiatives/2026-q1-ai-cost-intelligence-platform.yaml
+  Name: 2026 Q1 - AI Cost Intelligence Platform
+  Status: active
+  Project: eci-global#14
+
+✓ Initiative has GitHub Project #14
+
+Creating issue...
+Linking to project...
+Adding initiative comment...
+
+✅ Issue created and linked!
+
+Issue: https://github.com/eci-global/api-gateway/issues/234
+Project: https://github.com/orgs/eci-global/projects/14
+Initiative: initiatives/2026-q1-ai-cost-intelligence-platform.yaml
+```
+
+**Result:** Issue created and linked to both project and initiative
+
+---
+
+### Example 4: Full Initiative Creation (Rare)
+
+**User:** "I need to create a comprehensive initiative for modernizing our authentication service"
+
+**Skill:**
+```
+What would you like to create?
+A) Standalone issue
+B) Issue linked to existing initiative or project
+C) New comprehensive initiative with YAML file
+
+User: C
+
+Let's create a comprehensive initiative. I'll ask about scope, goals, and structure.
+
+What problem are you solving?
+> Need to support OAuth2 and SSO across all products
+
+[... detailed interview process ...]
+
+Does a GitHub Project already exist?
+A) Yes
+B) No, create one
+C) No project needed
+
+User: A
+
+Project number?
+> eci-global#15
+
+Does this initiative have workstreams?
+> Yes, two workstreams
+
+[... gather workstream details ...]
+
+Generating YAML file...
+Validating structure...
+Committing to eci-global/initiatives...
+
+✅ Initiative created!
+
+YAML: initiatives/2026-q2-auth-service-modernization.yaml
+Project: https://github.com/orgs/eci-global/projects/15
+Workstreams: 2
+
+Would you like me to break this down into tasks now?
+> Yes
+
+Invoking /initiative-breakdown...
+```
+
+**Result:** Full initiative YAML created, committed, ready for breakdown
+
+---
+
+### Example 5: Parameter-Based Non-Interactive
+
+**User:** "/initiative-creator --title 'Update docs' --body 'Add API documentation' --repo eci-global/api --project eci-global#14 --label documentation"
+
+**Skill:**
+```
+Creating issue in eci-global/api...
+Linking to project eci-global#14...
+✅ Done: https://github.com/eci-global/api/issues/567
+```
+
+**Result:** Issue created and linked in single command, no prompts
 
 ## Error Handling
 
