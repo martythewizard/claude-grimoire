@@ -1242,36 +1242,165 @@ This agent is invoked by:
 
 ### Skill Integration
 
-From a skill:
+Skills use the github-context-agent to gather and process structured GitHub context for various tasks.
 
-```markdown
-### Step: Gather GitHub Context
+**Pattern 1: Initiative Context (for breakdown tasks)**
 
-Invoke the `github-context-agent` with:
-- Issue numbers provided by user
-- Standard depth
-- Include comments and related PRs
+Used by skills that need to understand initiative structure and scope.
 
-Use the returned context to:
-- Generate PR references
-- Include acceptance criteria
-- Identify stakeholders
+```json
+{
+  "type": "initiative",
+  "identifier": "initiatives/2026-q1-ai-cost-intelligence-platform.yaml",
+  "depth": "standard",
+  "include": {
+    "yaml": true,
+    "project": true,
+    "workstreams": true,
+    "milestones": true,
+    "progress": true
+  }
+}
 ```
+
+Processing steps:
+1. Extract initiative metadata (name, status, owner, team)
+2. Retrieve all workstreams and their associated milestones
+3. Map repositories to workstreams
+4. Get GitHub Project reference if available
+5. Collect progress metrics from all sources
+6. Use to create scoped breakdown tasks
+
+Example skill usage: `initiative-breakdown` skill fetches initiative, extracts workstreams, creates issues in correct repos, assigns to correct milestones.
+
+**Pattern 2: Project Context (for linking tasks)**
+
+Used by skills that need to manage issues within a GitHub Project.
+
+```json
+{
+  "type": "project",
+  "identifier": "eci-global#14",
+  "depth": "shallow",
+  "include": {
+    "project": true
+  }
+}
+```
+
+Processing steps:
+1. Get project metadata and status
+2. Retrieve project GraphQL node ID for linking
+3. Count existing items by state
+4. Map items to repositories
+5. Check for related initiative in YAML
+6. Use node ID to add new issues to project
+
+Example skill usage: When creating new issues, skills fetch project context first to get GraphQL ID, then link newly created issues to the project.
+
+**Pattern 3: Workstream Scoping (for scoped task creation)**
+
+Used by skills that need to create tasks within a specific workstream.
+
+```json
+{
+  "type": "workstream",
+  "identifier": "initiative:2026-q1-ai-cost workstream:S3 Data Lake",
+  "depth": "standard",
+  "include": {
+    "workstreams": true,
+    "milestones": true
+  }
+}
+```
+
+Processing steps:
+1. Parse initiative reference and workstream name
+2. Load initiative YAML and find workstream
+3. Extract repo and milestone list for workstream
+4. Fetch milestone details and current issues
+5. Calculate workstream progress
+6. Use milestone info to scope new tasks
+
+Example skill usage: When user requests breakdown of one workstream only, skills fetch workstream context, create issues only in relevant repo and milestones, avoid affecting other workstreams.
+
+**Pattern 4: Milestone Assignment (for issue creation)**
+
+Used by skills that need to create issues within a milestone context.
+
+```json
+{
+  "type": "milestone",
+  "identifier": "eci-global/one-cloud-cloud-costs milestone:5",
+  "depth": "standard",
+  "include": {
+    "milestones": true
+  }
+}
+```
+
+Processing steps:
+1. Parse repository and milestone reference
+2. Fetch milestone by number or title
+3. Retrieve all issues in milestone
+4. Get milestone due date and current state
+5. Check for related workstream
+6. Use to understand milestone scope and create aligned issues
+
+Example skill usage: When creating new task, skills fetch milestone context to understand what's already planned, ensure new issue fits milestone goals, avoid duplicates.
 
 ### Team Integration
 
-From a team workflow:
+Teams use the github-context-agent across phases of workflow execution.
 
-```markdown
-**Phase 1: Context Gathering**
+**Pattern 1: Initiative Planning Phase**
 
-1. Invoke `github-context-agent` with initiative URL
-2. Extract:
-   - Initiative goals and scope
-   - Child issues and their status
-   - Key stakeholders
-3. Pass context to next phase
+When planning initiative work:
+
+```json
+{
+  "type": "initiative",
+  "identifier": "initiatives/2026-q1-ai-cost-intelligence-platform.yaml",
+  "depth": "deep",
+  "include": {
+    "yaml": true,
+    "project": true,
+    "workstreams": true,
+    "milestones": true,
+    "progress": true
+  }
+}
 ```
+
+Team workflow:
+1. Fetch full initiative context at deep depth
+2. Review initiative metadata, goals, owner, team assignments
+3. Examine all workstreams and their repos
+4. Check GitHub Project for existing linked items
+5. Review progress metrics across all sources
+6. Identify gaps or misalignments
+7. Pass structured context to breakdown or execution phase
+
+**Pattern 2: Milestone Progression Tracking**
+
+When monitoring milestone progress:
+
+```json
+{
+  "type": "milestone",
+  "identifier": "eci-global/one-cloud-cloud-costs milestone:5",
+  "depth": "standard"
+}
+```
+
+Team workflow:
+1. Fetch milestone context periodically
+2. Track open vs closed issue counts
+3. Check milestone due date and current state
+4. Identify related workstream from initiative YAML
+5. Detect related GitHub Project
+6. Use for status reports and progress tracking
+7. Notify stakeholders of milestone changes
 
 ## Configuration
 
