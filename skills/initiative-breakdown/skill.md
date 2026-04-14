@@ -263,97 +263,6 @@ When context type is "milestone", create tasks for one milestone.
 5. Link to project if milestone is part of tracked initiative
 ```
 
-## Linking and Assignment Logic
-
-### Project Linking
-
-**When to link:**
-- Initiative context has `github_project` field
-- Project context (user provided project directly)
-- Workstream's initiative has `github_project`
-- Milestone is part of initiative with `github_project`
-
-**How to link:**
-```bash
-gh project item-add <project-number> \
-  --owner <org> \
-  --url <issue-url>
-```
-
-**Error handling:**
-- If project doesn't exist: Warn user, skip linking
-- If project is closed: Warn user, ask if should still link
-- If rate limit hit: Batch links, retry with backoff
-
-### Milestone Assignment
-
-**When to assign:**
-- Task explicitly scoped to milestone (from workstream)
-- User breaking down single milestone
-- Task description references milestone
-
-**How to assign:**
-```bash
-gh issue edit <issue-number> \
-  --repo <owner>/<repo> \
-  --milestone "<milestone-title>"
-```
-
-**Validation:**
-- Check milestone exists in repo
-- Check milestone is not closed (warn if closed)
-- Use exact milestone title (case-sensitive)
-
-### Initiative Reference
-
-**Always add initiative comment when:**
-- Input was initiative YAML
-- Input was workstream (part of initiative)
-- Input was milestone (part of initiative)
-- Input was project linked to initiative
-
-**Comment format:**
-```markdown
-Part of initiative: [<initiative-name>](<yaml-url>)
-
-Workstream: <workstream-name>
-Milestone: <milestone-title>
-```
-
-### Order of Operations
-
-```
-1. Create issue in target repo
-2. Link to project (if applicable)
-3. Assign to milestone (if applicable)
-4. Add initiative reference comment (if applicable)
-5. Add dependency comments (if task depends on others)
-```
-
-### Batch Operations
-
-For efficiency when creating many tasks:
-```bash
-# Create all issues first
-issue_urls=()
-for task in "${tasks[@]}"; do
-  url=$(gh issue create --repo <repo> --title "<title>" --body "<body>" --format "%U")
-  issue_urls+=("$url")
-done
-
-# Batch link to project
-for url in "${issue_urls[@]}"; do
-  gh project item-add <number> --owner <org> --url "$url"
-done
-
-# Batch assign milestones (group by milestone)
-for milestone in "${milestones[@]}"; do
-  for issue_num in "${milestone_issues[$milestone]}"; do
-    gh issue edit "$issue_num" --repo <repo> --milestone "$milestone"
-  done
-done
-```
-
 ### 6. Analyze Current Codebase
 
 Understand existing architecture and patterns:
@@ -633,6 +542,98 @@ Provide user with summary and next steps:
 > 2. Assign tasks to team members
 > 3. Start with foundation tasks (#124, #126)
 > 4. Use `feature-delivery-team` for implementation workflow
+
+## Linking and Assignment Logic
+
+### Project Linking
+
+**When to link:**
+- Initiative context has `github_project` field
+- Project context (user provided project directly)
+- Workstream's initiative has `github_project`
+- Milestone is part of initiative with `github_project`
+
+**How to link:**
+```bash
+gh project item-add <project-number> \
+  --owner <org> \
+  --url <issue-url>
+```
+
+**Error handling:**
+- If project doesn't exist: Warn user, skip linking
+- If project is closed: Warn user, ask if should still link
+- If rate limit hit: Batch links, retry with backoff
+
+### Milestone Assignment
+
+**When to assign:**
+- Task explicitly scoped to milestone (from workstream)
+- User breaking down single milestone
+- Task description references milestone
+
+**How to assign:**
+```bash
+gh issue edit <issue-number> \
+  --repo <owner>/<repo> \
+  --milestone "<milestone-title>"
+```
+
+**Validation:**
+- Check milestone exists in repo
+- Check milestone is not closed (warn if closed)
+- Use exact milestone title (case-sensitive)
+
+### Initiative Reference
+
+**Always add initiative comment when:**
+- Input was initiative YAML
+- Input was workstream (part of initiative)
+- Input was milestone (part of initiative)
+- Input was project linked to initiative
+
+**Comment format:**
+```markdown
+Part of initiative: [<initiative-name>](<yaml-url>)
+
+Workstream: <workstream-name>
+Milestone: <milestone-title>
+```
+
+### Order of Operations
+
+```
+1. Create issue in target repo
+2. Link to project (if applicable)
+3. Assign to milestone (if applicable)
+4. Add initiative reference comment (if applicable)
+5. Add dependency comments (if task depends on others)
+```
+
+### Batch Operations
+
+For efficiency when creating many tasks:
+```bash
+# Assuming tasks, milestones, and milestone_issues are populated from context
+# Create all issues first
+issue_urls=()
+for task in "${tasks[@]}"; do
+  url=$(gh issue create --repo <repo> --title "<title>" --body "<body>")
+  issue_urls+=("$url")
+done
+
+# Batch link to project
+for url in "${issue_urls[@]}"; do
+  gh project item-add <number> --owner <org> --url "$url"
+done
+
+# Batch assign milestones (group by milestone)
+for milestone in "${milestones[@]}"; do
+  for issue_num in "${milestone_issues[$milestone]}"; do
+    gh issue edit "$issue_num" --repo <repo> --milestone "$milestone"
+  done
+done
+```
 
 ## Configuration
 
