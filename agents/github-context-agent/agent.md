@@ -1094,31 +1094,7 @@ When generating a PR description, fetch the related issue to:
 - Extract acceptance criteria for test plan
 - Understand the context and motivation
 
-### Example 2: Research Initiative for Breakdown
-
-**Request:**
-```json
-{
-  "type": "initiative",
-  "identifier": "https://github.com/myorg/myrepo/issues/100",
-  "depth": "deep",
-  "include": {
-    "comments": true,
-    "relatedIssues": true,
-    "commits": true,
-    "timeline": true
-  }
-}
-```
-
-**Use Case:**
-When breaking down an initiative, gather:
-- All child issues and their status
-- Discussion in comments
-- Related code changes
-- Timeline to understand dependencies
-
-### Example 3: Quick PR Status Check
+### Example 2: Quick PR Status Check
 
 **Request:**
 ```json
@@ -1135,7 +1111,7 @@ Quick check of PR status:
 - What's the current CI status?
 - Who are the reviewers?
 
-### Example 4: Find Code Owners for PR
+### Example 3: Find Code Owners for PR
 
 **Request:**
 ```json
@@ -1154,6 +1130,104 @@ When creating a PR, identify:
 - Who should review based on files changed
 - Team ownership of modified code
 - Required approvals
+
+### Example 4: Research Initiative for Breakdown
+
+**Request:**
+```json
+{
+  "type": "initiative",
+  "identifier": "initiatives/2026-q1-coralogix-quota-manager.yaml",
+  "depth": "deep",
+  "include": {
+    "yaml": true,
+    "project": true,
+    "workstreams": true,
+    "milestones": true,
+    "progress": true
+  }
+}
+```
+
+**Use Case:**
+When breaking down an initiative with /initiative-breakdown:
+- Fetch full initiative context including all workstreams
+- Extract milestones for each workstream
+- Get current progress metrics
+- Understand initiative structure to create properly scoped tasks
+- Link new issues to existing GitHub Project
+- Assign issues to appropriate milestones
+
+**Skill Integration:**
+```markdown
+# In initiative-breakdown skill
+
+1. Call github-context-agent with initiative YAML path
+2. Extract workstreams array from response
+3. For each workstream:
+   - Get repo and milestones
+   - Create issues in that repo
+   - Assign to milestone if specified
+   - Link to github_project if exists
+4. Add comment to each issue referencing initiative YAML
+```
+
+### Example 5: Link Issue to Project
+
+**Request:**
+```json
+{
+  "type": "project",
+  "identifier": "eci-global#14",
+  "depth": "shallow"
+}
+```
+
+**Use Case:**
+When creating issue that should be linked to project:
+- Verify project exists and is open
+- Get project GraphQL node ID for linking
+- Check current item count
+
+**Command sequence:**
+```bash
+# 1. Get project context
+# (via github-context-agent)
+
+# 2. Create issue
+gh issue create --title "New task" --body "Description" --repo eci-global/repo
+
+# 3. Link issue to project
+gh project item-add 14 --owner eci-global --url https://github.com/eci-global/repo/issues/456
+```
+
+### Example 6: Scope Tasks to Workstream
+
+**Request:**
+```json
+{
+  "type": "workstream",
+  "identifier": "initiative:2026-q1-ai-cost workstream:Intelligence System",
+  "depth": "standard",
+  "include": {
+    "workstreams": true,
+    "milestones": true
+  }
+}
+```
+
+**Use Case:**
+When user wants to break down just one workstream of an initiative:
+- Get milestones specific to this workstream
+- See existing issues in these milestones
+- Create new issues scoped to this workstream's milestones
+- Don't interfere with other workstreams
+
+**Response includes:**
+- Workstream name and repo
+- All milestones in this workstream
+- Issues in each milestone
+- Progress metrics for just this workstream
 
 ## Invoked By
 
