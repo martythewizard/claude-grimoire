@@ -205,38 +205,73 @@ Based on context type:
 
 ### Phase 3: Task Breakdown
 
-**Goal:** Break initiative into actionable tasks
+**Goal:** Break work into actionable tasks
 
-**Input:** Initiative + optional architecture design
+**Input:** Context from Phase 1 (initiative/project/workstream/milestone/standalone)
 
 **Process:**
 
-1. **Invoke initiative-breakdown:**
-   ```
-   /initiative-breakdown [initiative-number]
-   ```
+**Step 1: Determine Breakdown Approach**
 
-2. **Skill will:**
-   - Fetch initiative via github-context-agent
-   - Analyze codebase for patterns
-   - Generate tasks with dependencies
-   - Create GitHub issues
-   - Add breakdown summary to initiative
+```
+Based on context type from Phase 1:
 
-3. **Review breakdown with user:**
-   ```
-   Present task summary:
-   - Total tasks and categories
-   - Estimated effort
-   - Critical path
-   - Parallelization opportunities
-   
-   Ask: "Does this breakdown look right? Should I adjust granularity?"
-   
-   Iterate until approved
-   ```
+initiative:
+  Invoke /initiative-breakdown with YAML path
+  Pass full context (workstreams, milestones, project)
+  
+project:
+  Invoke /initiative-breakdown with project reference
+  Organize existing items, identify gaps
+  
+workstream:
+  Invoke /initiative-breakdown with workstream reference
+  Scope to specific workstream only
+  
+milestone:
+  Invoke /initiative-breakdown with milestone reference
+  Create tasks for single milestone
+  
+standalone:
+  Skip breakdown
+  Create single issue via /initiative-creator
+  Proceed directly to implementation
+```
+
+**Step 2: Invoke initiative-breakdown** (if applicable)
+
+```
+Call /initiative-breakdown with appropriate reference:
+  - Initiative: YAML path
+  - Project: org#number
+  - Workstream: initiative:name workstream:ws-name
+  - Milestone: repo milestone:"title"
+
+Skill will:
+  - Use github-context-agent internally
+  - Generate tasks
+  - Link to project if applicable
+  - Assign to milestones if applicable
+  - Reference initiative in comments
+```
+
+**Step 3: Review Breakdown with User**
+
+```
+Present task summary:
+  - Total tasks and categories
+  - Estimated effort
+  - Critical path
+  - Parallelization opportunities
+  
+Ask: "Does this breakdown look right? Should I adjust?"
+
+Iterate until approved
+```
 
 **Output:** Ordered tasks with acceptance criteria and estimates
+
+**Skip if:** Standalone issue (no breakdown needed)
 
 ---
 
