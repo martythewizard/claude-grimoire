@@ -1211,10 +1211,34 @@ From a team workflow:
     "token": "${GITHUB_TOKEN}",
     "apiUrl": "https://api.github.com",
     "cacheEnabled": true,
-    "cacheTTL": 300
+    "cacheTTL": 300,
+    "initiativesRepo": "eci-global/initiatives",
+    "initiativesPath": "initiatives/",
+    "defaultOrg": "eci-global"
+  },
+  "githubContextAgent": {
+    "defaultDepth": "standard",
+    "codeownersPath": ".github/CODEOWNERS",
+    "includeArchivedIssues": false,
+    "enableInitiatives": true,
+    "enableProjects": true,
+    "projectApiVersion": "v2",
+    "yamlSchemaVersion": 2,
+    "ambiguityHandling": "prompt"
   }
 }
 ```
+
+**New configuration fields:**
+
+- `initiativesRepo` - Repository containing initiative YAML files (default: "eci-global/initiatives")
+- `initiativesPath` - Path within repo to YAML files (default: "initiatives/")
+- `defaultOrg` - Default organization for project lookups (default: "eci-global")
+- `enableInitiatives` - Enable initiative YAML parsing (default: true)
+- `enableProjects` - Enable GitHub Projects v2 API (default: true)
+- `projectApiVersion` - Projects API version (default: "v2")
+- `yamlSchemaVersion` - Expected YAML schema version (default: 2)
+- `ambiguityHandling` - How to handle ambiguous input: "prompt" (ask user) or "auto" (best guess) (default: "prompt")
 
 ### Per-Repo Config (`.claude-grimoire/config.json`)
 
@@ -1223,10 +1247,19 @@ From a team workflow:
   "github": {
     "defaultDepth": "standard",
     "codeownersPath": ".github/CODEOWNERS",
-    "includeArchivedIssues": false
+    "includeArchivedIssues": false,
+    "projectNumber": 14,
+    "projectOrg": "eci-global",
+    "initiativeYaml": "initiatives/2026-q1-ai-cost-intelligence-platform.yaml"
   }
 }
 ```
+
+**Repo-specific fields:**
+
+- `projectNumber` - Default project for this repo
+- `projectOrg` - Organization for default project
+- `initiativeYaml` - Default initiative YAML for this repo
 
 ## Performance Considerations
 
