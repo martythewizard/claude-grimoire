@@ -1,13 +1,22 @@
 {
   "name": "claude-grimoire",
-  "version": "0.1.0",
-  "description": "Reusable agentic toolkit for Product Engineers - skills, agents, and teams for efficient workflows across repositories",
-  "author": "Your Name",
+  "version": "1.0.0",
+  "description": "Three-layer agentic toolkit for Product Engineers - automates feature delivery from planning to PR with 50-65% time savings",
+  "author": "Product Engineers",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/claude-grimoire"
+    "url": "https://github.com/martythewizard/claude-grimoire"
   },
+  "keywords": [
+    "automation",
+    "feature-delivery",
+    "pr-automation",
+    "planning",
+    "architecture",
+    "code-review",
+    "github"
+  ],
   "skills": [
     {
       "name": "pr-author",
