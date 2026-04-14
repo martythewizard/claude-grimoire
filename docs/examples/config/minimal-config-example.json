@@ -1,0 +1,8 @@
+{
+  "$comment": "Minimal configuration example",
+  "$comment2": "Only the essentials - everything else uses defaults",
+
+  "github": {
+    "org": "your-github-org"
+  }
+}

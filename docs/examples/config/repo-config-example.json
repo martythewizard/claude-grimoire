@@ -1,0 +1,26 @@
+{
+  "$comment": "Per-repository configuration example for .claude-grimoire/config.json",
+  "$comment2": "This file overrides global settings for a specific repository",
+
+  "github": {
+    "defaultLabels": ["needs-review", "automated"],
+    "defaultReviewers": ["team-lead", "senior-dev"],
+    "codeownersPath": ".github/CODEOWNERS",
+    "defaultDepth": "standard",
+    "includeArchivedIssues": false
+  },
+
+  "prAuthor": {
+    "titlePrefix": "[FEAT]",
+    "requireIssueReference": true,
+    "includeTestPlan": true,
+    "includeVisualChanges": true,
+    "templatePath": ".github/PULL_REQUEST_TEMPLATE.md"
+  },
+
+  "prAutopilot": {
+    "autoAssignReviewers": true,
+    "setAsDraft": false,
+    "runTests": true
+  }
+}

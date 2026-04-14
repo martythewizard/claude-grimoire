@@ -1,0 +1,26 @@
+{
+  "$comment": "Global configuration example for ~/.claude/claude-grimoire/config.json",
+  "$comment2": "This file provides defaults for all repositories",
+
+  "github": {
+    "org": "your-github-org",
+    "defaultRepos": ["repo1", "repo2"],
+    "apiUrl": "https://api.github.com",
+    "token": "${GITHUB_TOKEN}",
+    "cacheEnabled": true,
+    "cacheTTL": 300,
+    "defaultDepth": "standard"
+  },
+
+  "firehydrant": {
+    "apiUrl": "https://api.firehydrant.io",
+    "orgSlug": "your-org",
+    "apiKey": "${FIREHYDRANT_API_KEY}"
+  },
+
+  "coralogix": {
+    "apiUrl": "https://api.coralogix.com",
+    "region": "us",
+    "apiKey": "${CORALOGIX_API_KEY}"
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Claude Grimoire Configuration Schema",
+  "description": "Configuration schema for claude-grimoire plugin",
+  "type": "object",
+  "properties": {
+    "github": {
+      "type": "object",
+      "description": "GitHub integration settings",
+      "properties": {
+        "org": {
+          "type": "string",
+          "description": "Default GitHub organization"
+        },
+        "defaultRepos": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of default repositories"
+        },
+        "defaultLabels": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Default labels to apply to PRs"
+        },
+        "defaultReviewers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Default reviewers for PRs"
+        },
+        "codeownersPath": {
+          "type": "string",
+          "default": ".github/CODEOWNERS",
+          "description": "Path to CODEOWNERS file"
+        },
+        "apiUrl": {
+          "type": "string",
+          "format": "uri",
+          "default": "https://api.github.com",
+          "description": "GitHub API URL (for Enterprise)"
+        },
+        "token": {
+          "type": "string",
+          "description": "GitHub token (use ${GITHUB_TOKEN} to reference env var)"
+        },
+        "cacheEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable caching of GitHub API responses"
+        },
+        "cacheTTL": {
+          "type": "integer",
+          "default": 300,
+          "description": "Cache time-to-live in seconds"
+        },
+        "defaultDepth": {
+          "type": "string",
+          "enum": ["shallow", "standard", "deep"],
+          "default": "standard",
+          "description": "Default context gathering depth"
+        },
+        "includeArchivedIssues": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include archived issues in searches"
+        }
+      }
+    },
+    "prAuthor": {
+      "type": "object",
+      "description": "PR Author skill settings",
+      "properties": {
+        "titlePrefix": {
+          "type": "string",
+          "description": "Prefix for PR titles (e.g., '[FEAT]')"
+        },
+        "requireIssueReference": {
+          "type": "boolean",
+          "default": false,
+          "description": "Require issue reference in PR"
+        },
+        "includeTestPlan": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include test plan section"
+        },
+        "includeVisualChanges": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include visual changes section for UI PRs"
+        },
+        "templatePath": {
+          "type": "string",
+          "default": ".github/PULL_REQUEST_TEMPLATE.md",
+          "description": "Path to PR template file"
+        }
+      }
+    },
+    "prAutopilot": {
+      "type": "object",
+      "description": "PR Autopilot team settings",
+      "properties": {
+        "autoAssignReviewers": {
+          "type": "boolean",
+          "default": true,
+          "description": "Auto-assign reviewers from CODEOWNERS"
+        },
+        "setAsDraft": {
+          "type": "boolean",
+          "default": false,
+          "description": "Create PR as draft"
+        },
+        "runTests": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run tests before creating PR"
+        }
+      }
+    },
+    "firehydrant": {
+      "type": "object",
+      "description": "Firehydrant integration settings",
+      "properties": {
+        "apiUrl": {
+          "type": "string",
+          "format": "uri",
+          "default": "https://api.firehydrant.io",
+          "description": "Firehydrant API URL"
+        },
+        "orgSlug": {
+          "type": "string",
+          "description": "Firehydrant organization slug"
+        },
+        "apiKey": {
+          "type": "string",
+          "description": "Firehydrant API key (use ${FIREHYDRANT_API_KEY})"
+        }
+      }
+    },
+    "coralogix": {
+      "type": "object",
+      "description": "Coralogix integration settings",
+      "properties": {
+        "apiUrl": {
+          "type": "string",
+          "format": "uri",
+          "default": "https://api.coralogix.com",
+          "description": "Coralogix API URL"
+        },
+        "region": {
+          "type": "string",
+          "enum": ["us", "eu", "ap", "in"],
+          "default": "us",
+          "description": "Coralogix region"
+        },
+        "apiKey": {
+          "type": "string",
+          "description": "Coralogix API key (use ${CORALOGIX_API_KEY})"
+        }
+      }
+    }
+  }
+}
