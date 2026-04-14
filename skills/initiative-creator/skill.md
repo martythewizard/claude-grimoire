@@ -265,6 +265,229 @@ The issue is now tracked in the project and associated with the initiative.
   --milestone "M2 - Implementation"
 ```
 
+## Full Initiative Mode
+
+Create comprehensive initiative with YAML file in eci-global/initiatives repo.
+
+### When to Use
+
+- Large multi-week/multi-month initiatives
+- Cross-repository coordination needed
+- Need JIRA/Confluence integration
+- Want to track progress metrics
+- Multiple workstreams and milestones
+
+**This is the RARE case** - most work uses Standalone or Linking modes.
+
+### Workflow
+
+**Step 1: Gather Initiative Metadata**
+
+Ask user (existing questions from v1.0.0):
+- What problem are you solving?
+- Who are the stakeholders?
+- What are the goals and success metrics?
+- What's in scope / out of scope?
+- Dependencies and blockers?
+- Timeline and target completion?
+
+**Step 2: Ask About GitHub Project**
+
+```
+Does a GitHub Project already exist for this initiative?
+
+A) Yes (provide project number or URL)
+B) No, create one (rare - only if truly needed)
+C) No project needed
+
+If A:
+  Get project org and number
+  Verify project exists via github-context-agent
+  Include in YAML: github_project.org and github_project.number
+  
+If B:
+  Ask: "What should the project be named?"
+  Create project: gh project create --owner <org> --title "<name>"
+  Get new project number
+  Include in YAML
+  
+If C:
+  Skip github_project section in YAML
+```
+
+**Default assumption: Projects already exist (option A)**
+
+**Step 3: Ask About Workstreams**
+
+```
+Does this initiative span multiple repos or have distinct workstreams?
+
+If yes:
+  For each workstream:
+    - Name
+    - Repository (owner/repo)
+    - Milestones (titles, due dates, status)
+    
+If no:
+  Skip workstreams section
+```
+
+**Step 4: Ask About Optional Integrations**
+
+```
+One question at a time:
+
+1. "Is this tracked in JIRA?"
+   If yes: Collect project_key, parent_key, epic keys
+   
+2. "Is there Confluence documentation?"
+   If yes: Collect space_key, page_id
+   
+3. "What tags apply to this initiative?"
+   Collect array of tags (lowercase, kebab-case)
+   
+4. "Should Steward monitoring be enabled?"
+   Default: yes (enabled: true)
+   
+5. "Should Pulse notifications be configured?"
+   If yes: Collect scan_window, channels, discussion_category
+```
+
+**Step 5: Generate YAML File**
+
+**CRITICAL: Follow eci-global/initiatives structure exactly**
+
+```yaml
+schema_version: 2
+name: "<Initiative Name>"
+description: >-
+  <Multi-line description using folded scalar.
+  Second line continues naturally.>
+status: planning  # One of: active, planning, paused, completed, cancelled
+owner: <github-username>
+team:
+  - <member1>
+  - <member2>
+
+# Only include github_project if project exists or was created
+github_project:
+  org: <org-name>
+  number: <number>
+
+# Only include workstreams if provided
+workstreams:
+  - name: "<Workstream Name>"
+    repo: <owner>/<repo>
+    milestones:
+      - title: "<Milestone Title>"
+        number: <number>
+        due: "YYYY-MM-DD"
+        status: <freeform-status>
+
+# Only include jira if provided
+jira:
+  project_key: <KEY>
+  parent_key: <PARENT-KEY>
+  epics:
+    - key: <EPIC-KEY>
+      milestone: "<Milestone Title>"
+      status: <Status>
+
+# Only include confluence if provided
+confluence:
+  space_key: <SPACE>
+  page_id: "<page-id>"
+
+# Only include steward if enabled
+steward:
+  enabled: true
+
+# Only include tags if provided
+tags:
+  - <tag1>
+  - <tag2>
+
+# Only include pulse if configured
+pulse:
+  scan_window: <window>
+  channels:
+    - <channel1>
+  discussion_category: "<category>"
+```
+
+**YAML Generation Rules:**
+1. Use `>-` for multi-line descriptions (folded scalar)
+2. ISO 8601 dates: `YYYY-MM-DD` for dates, `YYYY-MM-DDTHH:MM:SSZ` for timestamps
+3. Status must be one of enum: active, planning, paused, completed, cancelled
+4. Only include sections with actual data (no empty arrays/objects)
+5. Quote strings with special characters (milestone titles with "—", etc.)
+6. Match field names exactly from schema v2 (snake_case)
+
+**File naming:** `initiatives/YYYY-QQ-<kebab-case-name>.yaml`
+Example: `initiatives/2026-q1-auth-service-modernization.yaml`
+
+**Step 6: Validate YAML**
+
+Before committing:
+```bash
+# Check YAML is valid
+cat initiatives/<file>.yaml | python3 -c "import sys, yaml; yaml.safe_load(sys.stdin)"
+
+# Verify required fields
+grep "schema_version: 2" initiatives/<file>.yaml
+grep "^name:" initiatives/<file>.yaml
+grep "^status:" initiatives/<file>.yaml
+grep "^owner:" initiatives/<file>.yaml
+```
+
+**Step 7: Commit to eci-global/initiatives**
+
+```bash
+cd /tmp
+git clone https://github.com/eci-global/initiatives.git
+cd initiatives
+cp /path/to/initiatives/<file>.yaml initiatives/
+git add initiatives/<file>.yaml
+git commit -m "Add initiative: <name>"
+git push origin main
+```
+
+**Step 8: Create Initial Issues (Optional)**
+
+```
+Ask user: "Would you like me to break this initiative down into tasks now?"
+
+If yes: Invoke /initiative-breakdown with YAML path
+If no: Provide next steps
+```
+
+**Step 9: Report Completion**
+
+```
+✅ Initiative created successfully!
+
+YAML: https://github.com/eci-global/initiatives/blob/main/initiatives/<file>.yaml
+Name: <Initiative Name>
+Status: planning
+Owner: @<username>
+GitHub Project: https://github.com/orgs/<org>/projects/<number> (if exists)
+
+What's next?
+1. Review the YAML file in eci-global/initiatives
+2. Use /initiative-breakdown to create tasks
+3. Share with stakeholders for feedback
+```
+
+### Parameter Example
+
+```bash
+# Force full YAML creation
+/initiative-creator --yaml
+
+# Will prompt for all initiative details
+# Then generate YAML and commit to eci-global/initiatives
+```
+
 ### 2. Goals and Success Metrics
 
 Define what success looks like:
