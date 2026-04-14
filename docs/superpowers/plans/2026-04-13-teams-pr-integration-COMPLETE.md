@@ -12,7 +12,7 @@
 ### feature-delivery-team
 - **Phase 1: Context Detection and Routing** - Updated to use github-context-agent for understanding any organizational pattern (initiatives, projects, workstreams, milestones)
   - Steps 1-4 guide context detection and workflow routing
-  - Supports 5 context types: initiative, project, workstream, milestone, standalone
+  - Supports 5 context types: initiative, project, workstream, milestone, issue
   
 - **Phase 3: Pass Context to initiative-breakdown** - Updated to pass full context from github-context-agent
   - Different invocation patterns for each context type
