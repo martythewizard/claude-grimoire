@@ -488,6 +488,79 @@ What's next?
 # Then generate YAML and commit to eci-global/initiatives
 ```
 
+## Parameter Passing
+
+The skill supports parameters for non-interactive invocation.
+
+### Supported Parameters
+
+**Issue parameters:**
+- `--issue <owner>/<repo>#<number>` - Use existing issue
+- `--title "<title>"` - Issue title (required if creating)
+- `--body "<body>"` - Issue description (required if creating)
+- `--repo <owner>/<repo>` - Target repository (required if creating without context)
+
+**Linking parameters:**
+- `--project <org>#<number>` or `--project <url>` - Link to GitHub Project
+- `--initiative <path>` - Link to initiative YAML
+- `--milestone "<title>"` - Assign to milestone
+
+**Issue metadata:**
+- `--label <label1>,<label2>` - Comma-separated labels
+- `--assignee <username>` - Issue assignee
+
+**Mode control:**
+- `--yaml` - Force Full Initiative Mode (interactive YAML creation)
+
+### Parameter Examples
+
+**Standalone issue:**
+```bash
+/initiative-creator --title "Fix bug" --body "Description" --repo owner/repo
+```
+
+**Link existing issue to project:**
+```bash
+/initiative-creator --issue owner/repo#123 --project org#14
+```
+
+**Create and link to everything:**
+```bash
+/initiative-creator \
+  --title "New feature" \
+  --body "Description" \
+  --repo owner/repo \
+  --project org#14 \
+  --initiative initiatives/file.yaml \
+  --milestone "M1 - Foundation" \
+  --label feature,high-priority \
+  --assignee username
+```
+
+**Force YAML creation:**
+```bash
+/initiative-creator --yaml
+# Will prompt for initiative details interactively
+```
+
+### Parameter Priority
+
+If both parameters and interactive mode are mixed:
+1. Parameters override interactive questions
+2. Missing parameters trigger interactive prompts for those fields only
+3. `--yaml` flag forces Full Initiative Mode regardless of other parameters
+
+### Validation
+
+Parameters are validated before execution:
+- Issue number must exist if `--issue` provided
+- Project must exist if `--project` provided
+- Initiative YAML must exist if `--initiative` provided
+- Repository must be accessible if `--repo` provided
+- Milestone must exist in repo if `--milestone` provided
+
+Validation failures return clear error messages with suggestions.
+
 ### 2. Goals and Success Metrics
 
 Define what success looks like:
