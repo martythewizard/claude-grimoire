@@ -1,7 +1,7 @@
 ---
 name: initiative-breakdown
 description: Break GitHub initiatives into actionable tasks with dependencies and estimates
-version: 1.0.0
+version: 2.0.0
 author: claude-grimoire
 requires:
   - github
@@ -885,3 +885,43 @@ This skill is successful when:
 - ✅ Effort estimates are realistic
 - ✅ Team can start working immediately
 - ✅ Progress is trackable (clear "done" definitions)
+
+## Migration from v1.0.0
+
+Version 2.0.0 adds flexible input handling while maintaining backward compatibility.
+
+### What Changed
+
+**New in v2.0.0:**
+- Accepts any organizational pattern (initiative/project/workstream/milestone)
+- Uses github-context-agent for context resolution
+- Automatically links to GitHub Projects when applicable
+- Assigns to milestones when scoped
+- Supports breaking down individual workstreams or milestones
+
+**Still works (v1.0.0 behavior):**
+- Breaking down initiatives via YAML path
+- All task generation logic
+- Effort estimation and dependencies
+
+### Breaking Changes
+
+None. All v1.0.0 input formats continue to work.
+
+### Migration Path
+
+**For skills invoking initiative-breakdown:**
+
+Old way:
+```bash
+/initiative-breakdown owner/repo#123
+```
+
+New way (same, but now also accepts):
+```bash
+/initiative-breakdown eci-global#14  # project
+/initiative-breakdown "initiative:name workstream:ws"  # workstream
+/initiative-breakdown 'repo milestone:"M1"'  # milestone
+```
+
+No code changes needed - additional formats now supported.
