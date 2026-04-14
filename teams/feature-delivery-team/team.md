@@ -473,60 +473,82 @@ Iterate until approved
 
 **Process:**
 
-1. **Gather PR context:**
-   ```
-   - Implemented task(s)
-   - Related initiative
-   - Changes made (git diff)
-   - Commit history
-   - Implementation notes from developer
-   - Review feedback (if any)
-   ```
+**Step 1: Gather PR Context**
 
-2. **Invoke /pr-author:**
-   ```
-   /pr-author
-   
-   Skill will:
-   - Analyze git state
-   - Fetch related GitHub issues via github-context-agent
-   - Ask clarifying questions
-   - Generate PR description:
-     - Summary
-     - Related issues (Closes #[task], Part of #[initiative])
-     - Changes (Added/Modified/Removed)
-     - Test plan
-     - Implementation notes
-   ```
+```
+Context to collect:
+  - Implemented task(s)
+  - Changes made (git diff)
+  - Commit history
+  - Implementation notes from developer
+  - Review feedback (if any)
+  
+NEW: Check for initiative/project linkage:
+  - Get current branch commits
+  - Extract issue numbers from commits
+  - For each issue:
+      Call github-context-agent with type="issue"
+      Check response for:
+        - related_initiative
+        - related_project
+        - related_workstream
+        - related_milestone
+  - Collect all linkage information
+```
 
-3. **Create PR:**
-   ```
-   - Push branch if needed
-   - Create PR with generated description
-   - Apply labels (from config)
-   - Assign reviewers (from CODEOWNERS)
-   - Link to initiative and task
-   ```
+**Step 2: Invoke /pr-author**
 
-4. **Report completion:**
-   ```
-   "✅ Feature implementation complete!
-   
-   PR: [URL]
-   Task: Closes #[number]
-   Initiative: Part of #[number]
-   
-   What was delivered:
-   - [Summary of implementation]
-   - [Test coverage: X%]
-   - [Files changed: N files, +X/-Y lines]
-   
-   Next steps:
-   - Human code review and approval
-   - CI/CD pipeline passes
-   - Merge to main
-   - Deploy to production"
-   ```
+```
+Call /pr-author
+
+Skill will:
+  - Analyze git state
+  - Fetch issue context via github-context-agent
+  - Detect initiative/project links automatically
+  - Generate PR description with proper references
+```
+
+**Step 3: Create PR**
+
+```
+pr-author generates description with:
+  - Summary
+  - Related issues: Closes #[task]
+  - Initiative: Part of [initiative-name] (YAML link)
+  - Project: https://github.com/orgs/org/projects/14
+  - Workstream: [workstream-name] (if applicable)
+  - Milestone: [milestone-title] (if applicable)
+  - Changes (Added/Modified/Removed)
+  - Test plan
+  - Implementation notes
+
+Push branch if needed
+Create PR with generated description
+Apply labels (from config)
+Assign reviewers (from CODEOWNERS)
+```
+
+**Step 4: Report Completion**
+
+```
+✅ Feature implementation complete!
+
+PR: [URL]
+Closes: #[number]
+Part of: [initiative-name]
+Project: [project-URL]
+
+What was delivered:
+  - [Summary]
+  - [Test coverage: X%]
+  - [Files changed: N files, +X/-Y lines]
+
+Next steps:
+  - Human code review and approval
+  - CI/CD pipeline passes
+  - Merge to main
+  - Deploy to production
+```
 
 **Output:** Pull request ready for human review
 
