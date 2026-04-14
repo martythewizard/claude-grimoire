@@ -33,20 +33,50 @@ Turn high-level project ideas into actionable GitHub initiatives with:
 
 ## Workflow
 
-### 1. Initial Context Gathering
+The skill operates in three modes based on user input and needs:
 
-Ask the user to describe the initiative at a high level:
+1. **Standalone Issue Mode** - Create issue without initiative/project
+2. **Linking Mode** - Create or link issue to existing initiative/project
+3. **Full Initiative Mode** - Create comprehensive YAML initiative (rare)
 
-**Questions to ask (one at a time):**
-- What problem are you trying to solve?
-- Who are the primary stakeholders or users affected?
-- Is this related to any existing initiatives or issues?
-- What repositories will be involved?
+### Mode Detection Process
 
-**Gather existing context:**
-- Check if there are related GitHub issues or PRs
-- Look for similar past initiatives
-- Review recent work in relevant repositories
+**Phase 1: Parse Input**
+
+Check what user provided:
+
+```
+Parameters provided:
+  --issue owner/repo#123        → Use existing issue (Linking Mode)
+  --title "..." --body "..."    → Create new issue (Standalone or Linking)
+  --project org#14              → Link to project (Linking Mode)
+  --initiative path/to/yaml     → Link to initiative (Linking Mode)
+  --yaml                        → Force Full Initiative Mode
+  
+No parameters:
+  → Interactive detection
+```
+
+**Phase 2: Interactive Detection (if no parameters)**
+
+```
+Ask user: "What would you like to create?"
+
+A) Standalone issue (no initiative or project)
+B) Issue linked to existing initiative or project
+C) New comprehensive initiative with YAML file
+
+If A: → Standalone Issue Mode
+If B: → Linking Mode (ask for initiative/project reference)
+If C: → Full Initiative Mode
+```
+
+### Mode Workflows
+
+The skill branches to one of three workflows based on detected mode:
+- Standalone Issue Mode → Task 2
+- Linking Mode → Task 3
+- Full Initiative Mode → Task 4
 
 ### 2. Goals and Success Metrics
 
