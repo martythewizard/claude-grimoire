@@ -1357,16 +1357,44 @@ From a team workflow:
    - Repeated requests within 5 minutes are cached
    - Manual refresh available when needed
 
+5. **Initiative YAML caching**
+   - YAML files change infrequently
+   - Cache for 5 minutes (default)
+   - Invalidate on explicit refresh
+   - Fetch only once per session when possible
+
+6. **Projects v2 GraphQL batching**
+   - Fetch project + items in single query
+   - Limit items to 100 per page
+   - Use cursor pagination for large projects
+   - Cache project metadata separately from items
+
+7. **Milestone data reuse**
+   - When fetching initiative with workstreams, cache milestone data
+   - Reuse for subsequent milestone-specific queries
+   - Batch milestone queries when multiple workstreams reference same repo
+
+8. **Selective inclusion**
+   - Default to `include.yaml: true, include.project: false`
+   - Only fetch project if explicitly needed
+   - Skip workstream milestone details for shallow depth
+
 ### Performance Benchmarks
 
-Typical response times (standard depth):
+Typical response times by depth:
 
-| Context Type | API Calls | Time |
-|-------------|-----------|------|
-| Single Issue | 3-5 | 2-4s |
-| Initiative (10 child issues) | 15-20 | 8-12s |
-| PR with reviews | 5-8 | 3-6s |
-| Repository CODEOWNERS | 1-2 | 1-2s |
+| Context Type | API Calls | Time (shallow) | Time (standard) | Time (deep) |
+|-------------|-----------|----------------|-----------------|-------------|
+| Single Issue | 3-5 | 2-4s | 2-4s | 4-8s |
+| Initiative (YAML only) | 1-2 | 1-2s | 1-2s | 1-2s |
+| Initiative (with Project) | 3-5 | 2-3s | 3-5s | 5-8s |
+| Initiative (with 3 workstreams) | 8-12 | 3-4s | 6-10s | 10-15s |
+| Project (< 100 items) | 1-2 | 2-3s | 2-3s | 3-5s |
+| Project (> 100 items) | 2-4 | 3-5s | 5-8s | 8-12s |
+| Workstream (2 milestones) | 3-5 | 2-3s | 3-5s | 5-8s |
+| Milestone | 2-3 | 1-2s | 2-3s | 3-5s |
+| PR with reviews | 5-8 | 3-6s | 3-6s | 6-10s |
+| Repository CODEOWNERS | 1-2 | 1-2s | 1-2s | 1-2s |
 
 ## Monitoring and Debugging
 
