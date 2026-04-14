@@ -149,6 +149,122 @@ This is a standalone issue. To link it to an initiative or project later, run:
   /initiative-creator --issue eci-global/app#789 --project org#14
 ```
 
+## Linking Mode
+
+Create or link an issue to an existing initiative (YAML) or project.
+
+### When to Use
+
+- Issue is part of tracked initiative
+- Issue belongs in existing GitHub Project
+- Want to associate standalone issue with initiative
+- Organizing work across repos/milestones
+
+### Workflow
+
+**Step 1: Get or Create Issue**
+
+```
+If --issue provided:
+  Fetch existing issue via github-context-agent
+  
+If --title/--body provided:
+  Create new issue (same as standalone mode)
+  
+If nothing provided:
+  Ask user: "Should I use an existing issue or create a new one?"
+  A) Use existing (ask for issue number)
+  B) Create new (gather title/body/repo)
+```
+
+**Step 2: Ask What to Link To**
+
+```
+Ask user: "What should this issue be linked to?"
+
+A) GitHub Project (provide org#number or URL)
+B) Initiative YAML (provide path or name)
+C) Both project and initiative
+D) Milestone within repo
+
+If A: → Link to Project (Task 3.2)
+If B: → Link to Initiative (Task 3.3)
+If C: → Link to both
+If D: → Assign to milestone
+```
+
+**Step 3: Verify Target Exists**
+
+Use github-context-agent to verify:
+- Project exists and is open
+- Initiative YAML exists
+- Milestone exists in repo
+
+**Step 4: Perform Linking**
+
+Based on target type:
+
+**Link to Project:**
+```bash
+# Get project ID if needed
+gh project item-add <project-number> \
+  --owner <org> \
+  --url https://github.com/<owner>/<repo>/issues/<number>
+```
+
+**Link to Initiative:**
+```bash
+# Add comment to issue referencing YAML
+gh issue comment <number> \
+  --repo <owner>/<repo> \
+  --body "Part of initiative: [2026 Q1 - AI Cost Intelligence](https://github.com/eci-global/initiatives/blob/main/initiatives/2026-q1-ai-cost-intelligence-platform.yaml)"
+```
+
+**Assign to Milestone:**
+```bash
+gh issue edit <number> \
+  --repo <owner>/<repo> \
+  --milestone "<milestone-title>"
+```
+
+**Step 5: Report Completion**
+
+```
+✅ Issue linked successfully!
+
+Issue: https://github.com/<owner>/<repo>/issues/<number>
+Linked to: GitHub Project #14 (2026 Q1 - AI Cost Intelligence Platform)
+Initiative: initiatives/2026-q1-ai-cost-intelligence-platform.yaml
+Milestone: M1 — Eyes Open: Automated Detection
+
+The issue is now tracked in the project and associated with the initiative.
+```
+
+### Parameter Examples
+
+```bash
+# Link existing issue to project
+/initiative-creator --issue eci-global/repo#123 --project eci-global#14
+
+# Create issue and link to project
+/initiative-creator --title "New task" --body "Description" --repo owner/repo --project org#14
+
+# Link to initiative YAML
+/initiative-creator --issue owner/repo#123 --initiative initiatives/2026-q1-ai-cost.yaml
+
+# Link to both project and milestone
+/initiative-creator --issue owner/repo#123 --project org#14 --milestone "M1 - Foundation"
+
+# Create and link everything
+/initiative-creator \
+  --title "Implement feature" \
+  --body "Description" \
+  --repo owner/repo \
+  --project org#14 \
+  --initiative initiatives/file.yaml \
+  --milestone "M2 - Implementation"
+```
+
 ### 2. Goals and Success Metrics
 
 Define what success looks like:
