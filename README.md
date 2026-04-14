@@ -265,6 +265,27 @@ Validate initiative YAML files against GitHub, JIRA, and Confluence.
 
 [Full documentation →](skills/initiative-validator/skill.md)
 
+---
+
+### 🔍 initiative-discoverer
+Find existing JIRA epics that should be tracked in an initiative using AI-driven matching.
+
+```bash
+/initiative-discoverer path/to/initiative.yaml
+```
+
+**When to use:** After creating initiative YAML, or periodically to find untracked work
+
+**What it does:**
+- Extracts context from YAML (description, team, repos, tags)
+- Searches JIRA for epics assigned to team members
+- Filters out already-tracked epics
+- Uses AI to rank candidates by relevance (1-10)
+- Generates YAML snippets ready to merge
+- Falls back to heuristics if AI unavailable
+
+[Full documentation →](skills/initiative-discoverer/skill.md)
+
 ## Agents
 
 Agents are specialized subagents that skills and teams delegate to. They run autonomously and return structured results.

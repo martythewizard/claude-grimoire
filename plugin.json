@@ -47,6 +47,11 @@
       "name": "initiative-validator",
       "path": "skills/initiative-validator/skill.md",
       "description": "Validate initiative YAML files against GitHub, JIRA, and Confluence"
+    },
+    {
+      "name": "initiative-discoverer",
+      "path": "skills/initiative-discoverer/skill.md",
+      "description": "Find existing JIRA epics that should be tracked in an initiative using AI-driven matching"
     }
   ],
   "agents": [
