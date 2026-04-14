@@ -54,8 +54,8 @@ The agent accepts a context request object:
 
 ```json
 {
-  "type": "issue | initiative | pr | repo",
-  "identifier": "owner/repo#123 | https://github.com/owner/repo/issues/123",
+  "type": "issue | initiative | project | workstream | milestone | pr | repo",
+  "identifier": "string (flexible format - see Identifier Formats below)",
   "depth": "shallow | standard | deep",
   "include": {
     "comments": true,
@@ -63,10 +63,58 @@ The agent accepts a context request object:
     "relatedIssues": true,
     "commits": false,
     "timeline": true,
-    "codeowners": false
+    "codeowners": false,
+    "yaml": true,
+    "project": true,
+    "workstreams": true,
+    "milestones": true,
+    "progress": true
   }
 }
 ```
+
+### Type Descriptions
+
+**Existing types:**
+- `issue` - GitHub issue
+- `pr` - GitHub pull request  
+- `repo` - Repository metadata
+
+**New types:**
+- `initiative` - Initiative defined in eci-global/initiatives YAML file
+- `project` - GitHub Project v2 (organization or repository project)
+- `workstream` - Logical grouping within an initiative (repo + milestones)
+- `milestone` - GitHub milestone within a repository
+
+### Identifier Formats
+
+The agent detects type from identifier format:
+
+**Initiative identifiers:**
+- YAML file path: `initiatives/2026-q1-ai-cost-intelligence-platform.yaml`
+- Initiative name: `2026 Q1 - AI Cost Intelligence Platform`
+- Partial match: `ai-cost-intelligence` (searches YAML files)
+
+**Project identifiers:**
+- URL: `https://github.com/orgs/eci-global/projects/14`
+- Org project: `eci-global#14`
+- Repo project: `owner/repo#project-14`
+
+**Workstream identifiers:**
+- Initiative + workstream: `initiative:2026-q1-ai-cost workstream:S3 Data Lake`
+- YAML path + workstream: `initiatives/file.yaml workstream:name`
+
+**Milestone identifiers:**
+- Repo + milestone name: `owner/repo milestone:"M1 - Foundation"`
+- Repo + milestone number: `owner/repo milestone:5`
+
+**Issue/PR identifiers (existing):**
+- `owner/repo#123`
+- `https://github.com/owner/repo/issues/123`
+- `#123` (if repo context available)
+
+**Ambiguous detection:**
+When identifier could match multiple types, agent asks for clarification.
 
 ### Depth Levels
 
