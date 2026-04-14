@@ -187,8 +187,8 @@ B) Initiative YAML (provide path or name)
 C) Both project and initiative
 D) Milestone within repo
 
-If A: → Link to Project (Task 3.2)
-If B: → Link to Initiative (Task 3.3)
+If A: → Link to Project
+If B: → Link to Initiative
 If C: → Link to both
 If D: → Assign to milestone
 ```
