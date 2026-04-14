@@ -119,6 +119,112 @@ The agent detects type from identifier format:
 **Ambiguous detection:**
 When identifier could match multiple types, agent asks for clarification. See Input Type Detection section below for detection priority rules and clarification flow.
 
+## Initiative YAML Parsing
+
+When `type: "initiative"` is requested, the agent fetches and parses YAML files from the `eci-global/initiatives` repository.
+
+### YAML Fetch Process
+
+1. **Identifier resolution:**
+   - If full path: `gh api repos/eci-global/initiatives/contents/{path}`
+   - If name/partial: Search `initiatives/` directory for matches
+   - If ambiguous: Return list of matches for user to choose
+
+2. **YAML parsing:**
+   - Fetch file content (base64 encoded)
+   - Decode content
+   - Parse YAML with schema v2 support
+   - Validate required fields present
+
+3. **Related data fetching (based on YAML content):**
+   - If `github_project` exists: Fetch project via GraphQL
+   - If `workstreams` exist: Fetch milestone data for each repo
+   - If `progress` exists: Include in context
+   - If `jira`/`confluence` exist: Include references (no API calls)
+
+### YAML Schema v2 Fields
+
+The agent understands all schema v2 fields:
+
+**Required:**
+- `schema_version` - Must be 2
+- `name` - Initiative name
+- `description` - What it delivers
+- `status` - One of: active, planning, paused, completed, cancelled
+- `owner` - GitHub username
+
+**Optional:**
+- `phase` - Current phase
+- `team` - Array of GitHub usernames
+- `github_project` - {org, number, id}
+- `workstreams` - Array of {name, repo, milestones}
+- `progress` - {github_issues, jira_epics, tests, infrastructure, etc}
+- `jira` - {project_key, parent_key, board_url, epics}
+- `confluence` - {space_key, page_id, page_version}
+- `steward` - {enabled, last_run}
+- `tags` - Array of strings
+- `pulse` - {scan_window, channels, discussion_category}
+
+### Example YAML Fetch
+
+```bash
+# Fetch initiative YAML
+gh api repos/eci-global/initiatives/contents/initiatives/2026-q1-ai-cost-intelligence-platform.yaml \
+  --jq '.content' | base64 -d
+
+# List all initiatives
+gh api repos/eci-global/initiatives/contents/initiatives --jq '.[].name'
+```
+
+### Error Handling
+
+**YAML not found:**
+```json
+{
+  "success": false,
+  "error": {
+    "type": "NotFound",
+    "message": "Initiative 'auth' not found in eci-global/initiatives",
+    "suggestion": "Available initiatives: 2026-q1-ai-cost-intelligence-platform.yaml, 2026-q1-coralogix-quota-manager.yaml, ...",
+    "retryable": false
+  }
+}
+```
+
+**Invalid YAML schema:**
+```json
+{
+  "success": false,
+  "error": {
+    "type": "ValidationError",
+    "message": "YAML validation failed",
+    "details": [
+      "Missing required field: status",
+      "Invalid status value: 'in progress' (must be one of: active, planning, paused, completed, cancelled)"
+    ],
+    "suggestion": "Check YAML file conforms to schema v2",
+    "retryable": false
+  }
+}
+```
+
+**Ambiguous identifier:**
+```json
+{
+  "success": false,
+  "error": {
+    "type": "AmbiguousInput",
+    "message": "Multiple initiatives match 'cost'",
+    "matches": [
+      "2026-q1-ai-cost-intelligence-platform.yaml",
+      "2025-q4-cost-optimization.yaml"
+    ],
+    "suggestion": "Please specify which initiative",
+    "retryable": true
+  }
+}
+```
+
 ### Depth Levels
 
 **Shallow** (fastest, < 5s)
