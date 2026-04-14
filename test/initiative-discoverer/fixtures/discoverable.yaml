@@ -1,0 +1,21 @@
+schema_version: 1
+name: "Test Discoverable Initiative"
+description: "Initiative for testing discovery of untracked epics"
+status: active
+owner: testuser
+team:
+  - testuser
+  - developer1
+repos:
+  - name: eci-global/test-repo
+    milestones:
+      - "Q1 Release"
+jira:
+  project_key: TEST
+  epics:
+    - key: TEST-100
+      milestone: "Q1 Release"
+    # TEST-200 and TEST-201 exist but not tracked (should be discovered)
+tags:
+  - test
+  - discovery
