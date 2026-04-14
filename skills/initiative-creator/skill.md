@@ -1,7 +1,7 @@
 ---
 name: initiative-creator
 description: Create well-structured GitHub initiatives through guided workflow
-version: 1.0.0
+version: 2.0.0
 author: claude-grimoire
 requires:
   - github
@@ -74,9 +74,9 @@ If C: → Full Initiative Mode
 ### Mode Workflows
 
 The skill branches to one of three workflows based on detected mode:
-- Standalone Issue Mode → Task 2
-- Linking Mode → Task 3
-- Full Initiative Mode → Task 4
+- Standalone Issue Mode (see below)
+- Linking Mode (see below)
+- Full Initiative Mode (see below)
 
 ## Standalone Issue Mode
 
@@ -283,7 +283,7 @@ Create comprehensive initiative with YAML file in eci-global/initiatives repo.
 
 **Step 1: Gather Initiative Metadata**
 
-Ask user (existing questions from v1.0.0):
+Ask user:
 - What problem are you solving?
 - Who are the stakeholders?
 - What are the goals and success metrics?
@@ -861,3 +861,46 @@ This skill is successful when:
 - ✅ Dependencies and risks are identified upfront
 - ✅ Timeline is realistic and has buy-in
 - ✅ Follow-up work (`initiative-breakdown`) can proceed smoothly
+
+## Migration from v1.0.0
+
+Version 2.0.0 adds flexibility while maintaining backward compatibility.
+
+### What Changed
+
+**New in v2.0.0:**
+- Three modes: standalone issue, linking, full initiative
+- Parameter passing for non-interactive use
+- Linking to existing projects/initiatives (no longer creates by default)
+- YAML generation follows eci-global/initiatives schema v2 exactly
+
+**Still works (v1.0.0 behavior):**
+- Interactive initiative creation workflow
+- Visual PRD integration
+- All existing questions and prompts
+
+### Breaking Changes
+
+**None.** All v1.0.0 workflows continue to work.
+
+**Default behavior change:** Skill now asks mode first ("What would you like to create?") instead of assuming full initiative creation. This is more flexible but requires one additional question.
+
+To force v1.0.0 behavior (skip mode selection):
+```bash
+/initiative-creator --yaml
+```
+
+### Migration Path
+
+**For skills invoking initiative-creator:**
+
+No changes required. Existing invocations work as before.
+
+**For users:**
+
+Old way (v1.0.0): Always creates comprehensive initiative with YAML
+New way (v2.0.0): Choose mode based on need (most work is standalone/linking)
+
+**Recommended usage:**
+- 90% of time: Standalone or Linking mode
+- 10% of time: Full Initiative mode (for large initiatives)
