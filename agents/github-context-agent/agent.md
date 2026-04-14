@@ -225,6 +225,147 @@ gh api repos/eci-global/initiatives/contents/initiatives --jq '.[].name'
 }
 ```
 
+## GitHub Projects v2 Integration
+
+When `type: "project"` is requested, the agent fetches project data using GitHub's Projects v2 GraphQL API.
+
+### Project Fetch Process
+
+1. **Identifier resolution:**
+   - URL: Extract org/repo and project number
+   - `org#number`: Organization project
+   - `owner/repo#project-number`: Repository project
+
+2. **GraphQL query:**
+   ```graphql
+   query($org: String!, $number: Int!) {
+     organization(login: $org) {
+       projectV2(number: $number) {
+         id
+         title
+         url
+         shortDescription
+         public
+         closed
+         createdAt
+         updatedAt
+         items(first: 100) {
+           totalCount
+           nodes {
+             id
+             content {
+               ... on Issue {
+                 id
+                 number
+                 title
+                 state
+                 url
+                 repository {
+                   nameWithOwner
+                 }
+                 milestone {
+                   title
+                   number
+                 }
+               }
+               ... on PullRequest {
+                 id
+                 number
+                 title
+                 state
+                 url
+                 repository {
+                   nameWithOwner
+                 }
+               }
+             }
+           }
+         }
+       }
+     }
+   }
+   ```
+
+3. **Data enrichment:**
+   - Count items by state (open/closed)
+   - Group items by repository
+   - Calculate progress percentage
+   - Extract milestone associations
+
+### Example GraphQL Execution
+
+```bash
+# Fetch organization project
+gh api graphql -f query='
+  query {
+    organization(login: "eci-global") {
+      projectV2(number: 14) {
+        id
+        title
+        url
+        items(first: 100) {
+          totalCount
+          nodes {
+            content {
+              ... on Issue {
+                number
+                title
+                state
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+'
+```
+
+### Error Handling
+
+**Project not found:**
+```json
+{
+  "success": false,
+  "error": {
+    "type": "NotFound",
+    "message": "GitHub Project #99 not found in eci-global",
+    "suggestion": "Verify project number and organization. Use GitHub UI to check project exists.",
+    "retryable": false
+  }
+}
+```
+
+**Permission denied:**
+```json
+{
+  "success": false,
+  "error": {
+    "type": "PermissionDenied",
+    "message": "Cannot access GitHub Project #14 in eci-global",
+    "suggestion": "Ensure GitHub token has 'project' read scope. Run: gh auth refresh -s project",
+    "retryable": true
+  }
+}
+```
+
+### Project-Initiative Linking
+
+When an initiative YAML contains `github_project`, the agent automatically fetches project data:
+
+```yaml
+github_project:
+  org: eci-global
+  number: 14
+  id: PVT_kwDOBgqCFs4BRXOh  # Optional GraphQL node ID
+```
+
+The agent will:
+1. Fetch initiative YAML
+2. See `github_project` section
+3. Make GraphQL call to fetch project
+4. Merge project data into response
+
 ### Depth Levels
 
 **Shallow** (fastest, < 5s)
