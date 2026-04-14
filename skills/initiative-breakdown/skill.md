@@ -646,7 +646,13 @@ The skill respects configuration from `.claude-grimoire/config.json`:
     "includeFileReferences": true,
     "includeImplementationNotes": true,
     "autoInvokeArchitect": false,
-    "effortEstimationUnit": "days"
+    "effortEstimationUnit": "days",
+    "linkToProject": true,
+    "assignToMilestones": true,
+    "createMilestonesIfMissing": false,
+    "batchOperations": true,
+    "maxTasksPerBreakdown": 50,
+    "requireConfirmation": false
   },
   "github": {
     "defaultLabels": ["task"],
@@ -654,6 +660,20 @@ The skill respects configuration from `.claude-grimoire/config.json`:
   }
 }
 ```
+
+**Configuration fields:**
+
+- `defaultTaskSize` - Default effort size for new tasks (S/M/L) (default: M)
+- `includeFileReferences` - Include file paths in task descriptions (default: true)
+- `includeImplementationNotes` - Include implementation guidance (default: true)
+- `autoInvokeArchitect` - Automatically invoke system-architect-agent (default: false)
+- `effortEstimationUnit` - Time unit for estimates (days/weeks) (default: days)
+- `linkToProject` - Automatically link issues to GitHub Project if initiative has one (default: true)
+- `assignToMilestones` - Automatically assign issues to milestones when applicable (default: true)
+- `createMilestonesIfMissing` - Create milestone if it doesn't exist (default: false - warn instead)
+- `batchOperations` - Use batch operations for efficiency (default: true)
+- `maxTasksPerBreakdown` - Warn if breakdown would create more than N tasks (default: 50)
+- `requireConfirmation` - Ask before creating issues (default: false)
 
 ## Tips for Effective Breakdowns
 
@@ -691,17 +711,39 @@ The skill respects configuration from `.claude-grimoire/config.json`:
 ## Integration with Other Skills
 
 **Before initiative-breakdown:**
-- `/initiative-creator` - Create well-structured initiative first
-- Manual initiative creation - Ensure scope is well-defined
+- `/initiative-creator` - Create initiative or gather context
+- Manual initiative YAML creation
 
 **During initiative-breakdown:**
-- `github-context-agent` - Fetch initiative details (required)
+- `github-context-agent` - Fetch context for any input type (required)
 - `system-architect-agent` - Design architecture for complex initiatives (optional)
 
 **After initiative-breakdown:**
-- `feature-delivery-team` - Execute task implementation with full workflow
+- `feature-delivery-team` - Execute task implementation
 - `staff-developer` - Implement individual tasks
 - Manual assignment - Assign tasks to team members
+
+**Invoked by:**
+- `initiative-creator` - After creating initiative YAML
+- `feature-delivery-team` - Phase 3 (task breakdown)
+- Users directly via `/initiative-breakdown`
+
+**Example integration:**
+
+From initiative-creator:
+```markdown
+After creating initiative YAML:
+  Ask user: "Would you like me to break this down into tasks now?"
+  If yes: Invoke /initiative-breakdown with YAML path
+```
+
+From feature-delivery-team:
+```markdown
+Phase 3: Task Breakdown
+  If user provided initiative: Invoke /initiative-breakdown
+  If user provided project: Invoke /initiative-breakdown with project
+  If standalone: Create simple task list (no skill needed)
+```
 
 ## Examples
 
