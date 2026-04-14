@@ -1,0 +1,9 @@
+schema_version: 1
+name: "Invalid Initiative"
+status: in-progress
+# Missing: description (required)
+# Missing: owner (required)
+repos:
+  - name: eci-global/test-repo
+    milestones:
+      - "Q1 Release"

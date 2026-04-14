@@ -1,0 +1,26 @@
+schema_version: 1
+name: "Test Initiative"
+description: "A test initiative for validation"
+status: active
+owner: testuser
+team:
+  - testuser
+  - developer1
+repos:
+  - name: eci-global/test-repo
+    milestones:
+      - "Q1 Release"
+      - "Q2 Release"
+jira:
+  project_key: TEST
+  epics:
+    - key: TEST-100
+      milestone: "Q1 Release"
+    - key: TEST-101
+      milestone: "Q2 Release"
+confluence:
+  space_key: TEST
+  page_id: "123456789"
+tags:
+  - test
+  - validation
