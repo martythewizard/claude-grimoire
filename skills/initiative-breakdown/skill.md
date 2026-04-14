@@ -34,35 +34,94 @@ Convert high-level initiatives into concrete implementation tasks:
 
 ## Workflow
 
-### 1. Fetch Initiative Context
+### 1. Input Detection and Context Gathering
 
-Use the `github-context-agent` to gather full initiative details:
+The skill accepts flexible input and uses `github-context-agent` to resolve it.
 
-**Required information:**
-- Initiative title and description
-- Goals and success metrics
-- Scope definition (in/out of scope)
-- Dependencies and constraints
-- Timeline and milestones
-- Related issues and PRs
+**Supported Input Types:**
 
-**Invoke agent:**
 ```
-github-context-agent({
-  "type": "initiative",
-  "identifier": "owner/repo#123",
-  "depth": "deep"
-})
+Initiative YAML:
+  initiatives/2026-q1-ai-cost-intelligence-platform.yaml
+  2026-q1-ai-cost-intelligence
+  ai-cost-intelligence (search term)
+
+GitHub Project:
+  eci-global#14
+  https://github.com/orgs/eci-global/projects/14
+
+Workstream:
+  initiative:ai-cost workstream:S3 Data Lake
+
+Milestone:
+  eci-global/repo milestone:"M1 - Foundation"
+  eci-global/repo milestone:5
+
+Standalone Issue:
+  eci-global/repo#123 (break into related tasks)
 ```
 
-**Validate initiative is ready for breakdown:**
-- ✅ Goals clearly defined
-- ✅ Scope boundaries established
-- ✅ Success criteria specified
-- ✅ Technical approach outlined
+**Step 1: Invoke github-context-agent**
 
-**If initiative is incomplete:**
-> "This initiative is missing [goals/scope/success criteria]. I recommend using `/initiative-creator` to refine it before breaking it down. Should we do that first?"
+```
+Call github-context-agent with:
+  identifier: <user-provided-input>
+  depth: "deep"
+  include: {
+    yaml: true,
+    project: true,
+    workstreams: true,
+    milestones: true,
+    progress: true
+  }
+```
+
+**Step 2: Handle Response**
+
+```
+If success:
+  Extract context based on type:
+    - initiative: workstreams, github_project, progress
+    - project: items by repo, milestones
+    - workstream: milestones, repo
+    - milestone: issues, repo
+    - issue: create related tasks
+    
+If error (ambiguous):
+  Present options to user
+  Re-invoke with clarified identifier
+  
+If error (not found):
+  Suggest alternatives or creation
+```
+
+**Example Invocation:**
+
+```
+User: /initiative-breakdown initiatives/2026-q1-coralogix-quota-manager.yaml
+
+Skill: Fetching initiative context via github-context-agent...
+
+Agent returns:
+  type: initiative
+  metadata: { name: "2026 Q1 - Coralogix Quota Manager", status: "active", ... }
+  github_project: { org: "eci-global", number: 8, ... }
+  workstreams: [
+    {
+      name: "Quota Enforcement",
+      repo: "eci-global/coralogix",
+      milestones: [...]
+    }
+  ]
+
+Skill: ✓ Initiative found
+  Name: 2026 Q1 - Coralogix Quota Manager
+  Status: active
+  Workstreams: 1
+  GitHub Project: eci-global#8
+
+Ready to break down. Continue? (y/n)
+```
 
 ### 2. Analyze Current Codebase
 
