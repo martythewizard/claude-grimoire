@@ -118,7 +118,7 @@ If user provided reference:
     - project
     - workstream
     - milestone
-    - issue
+    - standalone
 ```
 
 **Step 4: Route to Appropriate Workflow**
