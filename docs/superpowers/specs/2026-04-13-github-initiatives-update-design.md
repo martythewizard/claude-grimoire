@@ -17,27 +17,36 @@ The current claude-grimoire implementation references "initiatives" but doesn't 
 3. **No YAML awareness** - Skills don't know how to read or create YAML initiative files
 4. **Rigid input assumptions** - Skills assume specific formats instead of flexibly detecting context
 5. **Progress tracking gaps** - YAML schema includes rich progress metadata not captured by skills
+6. **initiative-creator too rigid** - Assumes every invocation creates a YAML file, but most work is creating/linking individual issues to existing initiatives or projects
 
 This creates confusion when users want to:
-- Create initiatives that map to their actual system
+- Create standalone issues or link existing issues to initiatives/projects
+- Work with existing GitHub Projects without creating YAML files
 - Break down initiatives into tasks across multiple repos and milestones
 - Link PRs to the correct initiative structure
 - Track progress consistently with the YAML schema
+
+**Key insight:** GitHub Projects typically already exist. YAML initiatives are comprehensive tracking documents created occasionally, not for every piece of work. The skill should be flexible enough to handle: standalone issues, issue linking, and full YAML initiative creation as separate workflows.
 
 ## Goals
 
 1. **Enable context-aware workflows** - Skills detect whether user provided an initiative YAML, GitHub Project, workstream, milestone, or issue
 2. **Unify context gathering** - Single agent (`github-context-agent`) that understands all organizational patterns
-3. **Support flexible creation** - `initiative-creator` can create YAML files, optionally create GitHub Projects, and handle all linking
-4. **Intelligent breakdown** - `initiative-breakdown` works with any input type and creates appropriately structured tasks
-5. **Maintain backward compatibility** - Existing issue/PR workflows continue to work unchanged
+3. **Support flexible work creation** - `initiative-creator` can handle: standalone issues, linking to existing projects/initiatives, or creating full YAML initiatives (rare)
+4. **Default to linking, not creating** - Assume projects exist and need linking; only create when explicitly needed
+5. **Accept direct parameters** - Skills accept issue numbers or creation parameters to skip interactive flows
+6. **Intelligent breakdown** - `initiative-breakdown` works with any input type and creates appropriately structured tasks
+7. **Maintain backward compatibility** - Existing issue/PR workflows continue to work unchanged
 
 ## Success Metrics
 
 - ✅ Skills successfully process YAML initiatives, GitHub Projects, workstreams, milestones, and standalone issues
 - ✅ `github-context-agent` returns consistent context structure for any input type
-- ✅ `initiative-creator` generates valid schema v2 YAML files
+- ✅ `initiative-creator` can create standalone issues, link to existing projects/initiatives, and create full YAML initiatives
+- ✅ `initiative-creator` accepts issue numbers as direct input without requiring YAML creation
+- ✅ `initiative-creator` accepts parameters (title, body, project, etc.) to skip interactive questions
 - ✅ Created tasks link correctly to GitHub Projects when initiatives use them
+- ✅ Linking to existing projects is the default (not creation)
 - ✅ Existing workflows without initiatives continue to function
 - ✅ Skills ask clarifying questions when input is ambiguous
 
@@ -54,12 +63,14 @@ This creates confusion when users want to:
 - Normalized output structure for all types
 
 **initiative-creator skill updates:**
-- Create YAML files conforming to schema v2
-- Optional GitHub Project creation (ask user)
-- Handle all optional fields (jira, confluence, steward, pulse, tags)
-- Support multiple workflows: new initiative, add to existing project, standalone
-- Commit YAML to `eci-global/initiatives` repo
-- Link issues to project if project exists
+- Accept existing issue number as direct input
+- Create standalone issues from parameters
+- Link issues to existing initiatives (YAML) or projects (default: link, not create)
+- Optionally create YAML files conforming to schema v2 (for comprehensive initiatives)
+- Rarely create GitHub Projects (only when explicitly needed - projects typically pre-exist)
+- Handle all optional fields (jira, confluence, steward, pulse, tags) for YAML creation
+- Support multiple workflows: standalone issue, issue + linking, full initiative with YAML
+- Commit YAML to `eci-global/initiatives` repo (when YAML workflow chosen)
 
 **initiative-breakdown skill updates:**
 - Accept flexible input (YAML path, project URL, issue #, milestone, workstream)
@@ -248,54 +259,100 @@ graph TD
 
 **Updated workflow:**
 
-**Phase 1: Determine creation mode**
+**Phase 1: Detect input and determine mode**
 ```
-Ask user: "What would you like to create?"
-A) New initiative (YAML + optional GitHub Project)
-B) Add tasks to existing initiative
-C) Standalone issues (no initiative)
+Check what user provided:
+- Issue number (e.g., #123, owner/repo#123) → Use existing issue
+- Issue creation parameters (title, description) → Create new issue
+- YAML path or initiative reference → Link to existing initiative
+- GitHub Project reference → Link to existing project
+- Nothing specific → Ask what to create
 
-If A: Continue with initiative creation
-If B: Fetch existing initiative context via github-context-agent
-If C: Skip to issue creation
-```
-
-**Phase 2: Gather initiative details** (existing interview, enhanced)
-- All existing questions remain
-- Add: "Should I create a GitHub Project for this initiative?"
-  - If yes: Collect project details
-  - If no: YAML only
-
-**Phase 3: Gather optional integrations**
-```
-Ask (one at a time):
-- "Is this tracked in JIRA?" → If yes, collect project_key, parent_key, epics
-- "Is there Confluence documentation?" → If yes, collect space_key, page_id
-- "What tags apply?" → Collect tags array
-- "Should we enable Steward monitoring?" → Enable steward section
+If existing issue provided:
+  Fetch issue via github-context-agent
+  Ask: "Should I link this to an initiative or project?"
+  
+If issue parameters provided:
+  Create issue first
+  Ask: "Should I link this to an initiative or project?"
+  
+If nothing provided:
+  Ask user: "What would you like to create?"
+  A) Standalone issue (just create issue)
+  B) Issue linked to existing initiative/project (provide reference)
+  C) New initiative with YAML (full initiative creation)
 ```
 
-**Phase 4: Generate and create**
-1. Generate schema v2 YAML file
-2. Validate against schema
-3. If GitHub Project requested:
-   - Create project via `gh project create`
-   - Add org and number to YAML
-4. Commit YAML to `eci-global/initiatives` repo
-5. Create initial workstreams (if repos known)
-
-**Phase 5: Breakdown prompt**
+**Phase 2: Handle linking (if applicable)**
 ```
-"Initiative created! Would you like me to break it down into tasks now?"
-If yes: Invoke /initiative-breakdown
-If no: Provide next steps
+If user wants to link to existing:
+  Ask: "What should I link to?"
+  - YAML initiative path
+  - GitHub Project (org#number or URL)
+  - Workstream within initiative
+  - Milestone within repo
+  
+  Invoke github-context-agent to fetch context
+  Link issue appropriately:
+    - Add to GitHub Project if project exists
+    - Assign to milestone if specified
+    - Add comment referencing initiative YAML
 ```
 
-**File operations:**
-- Clone or fetch `eci-global/initiatives` repo
-- Write YAML to `initiatives/<name>.yaml`
-- Commit with message: "Add initiative: <name>"
-- Push to main branch
+**Phase 3: Full initiative creation (only if user chose option C)**
+- Gather initiative details via interview (existing questions)
+- Ask about GitHub Project:
+  - "Does a GitHub Project already exist for this?" (default: yes, just link)
+    - If yes: "What's the project number or URL?"
+    - If no: "Should I create one?" (rare case)
+- Ask about optional integrations:
+  - JIRA tracking (project_key, parent_key, epics)
+  - Confluence documentation (space_key, page_id)
+  - Tags for categorization
+  - Steward monitoring
+
+**Phase 4: Create and link as appropriate**
+```
+Based on mode:
+
+Standalone issue:
+  1. Create issue via `gh issue create`
+  2. Done
+
+Issue with linking:
+  1. Create/fetch issue
+  2. If project provided: Link to project
+  3. If milestone provided: Assign to milestone
+  4. If initiative provided: Add comment with YAML reference
+  
+Full initiative:
+  1. Generate schema v2 YAML file
+  2. Validate against schema
+  3. If linking existing project: Add github_project section to YAML
+  4. If creating new project (rare): Create via `gh project create`, add to YAML
+  5. Commit YAML to `eci-global/initiatives` repo
+  6. If issues to create: Create and link them
+```
+
+**Phase 5: Next steps prompt**
+```
+"Created [issue/initiative]! What's next?"
+- For standalone issue: "Issue created at [URL]"
+- For linked issue: "Issue created and linked to [project/initiative]"
+- For new initiative: "Initiative created! Would you like me to break it down into tasks?"
+  If yes: Invoke /initiative-breakdown
+  If no: Provide summary and next steps
+```
+
+**Implementation notes:**
+- Default assumption: Projects already exist, just need linking (not creation)
+- YAML creation is for comprehensive initiatives, not every issue
+- Can be invoked with parameters to skip interactive questions:
+  - `--issue owner/repo#123` (use existing)
+  - `--title "..." --body "..."` (create new)
+  - `--project org#14` (link to project)
+  - `--initiative path/to/yaml` (link to initiative)
+  - `--yaml` (force YAML creation)
 
 #### 3. initiative-breakdown
 
@@ -536,8 +593,10 @@ C) Correct the project number
   },
   "initiativeCreator": {
     "templatePath": ".claude-grimoire/templates/initiative.yaml",
-    "alwaysCreateProject": false,
-    "promptForOptionalFields": true
+    "defaultMode": "issue",
+    "assumeProjectExists": true,
+    "promptForOptionalFields": true,
+    "allowParameters": true
   },
   "initiativeBreakdown": {
     "linkToProject": true,
@@ -546,6 +605,12 @@ C) Correct the project number
   }
 }
 ```
+
+**Configuration notes:**
+- `defaultMode: "issue"` - Start by assuming user wants to create/link an issue, not a full YAML initiative
+- `assumeProjectExists: true` - Default assumption is projects already exist and need linking (not creation)
+- `allowParameters: true` - Accept command-line style parameters to skip interactive questions
+- Projects are rarely created - only when explicitly requested and needed
 
 ### YAML Template (optional)
 
