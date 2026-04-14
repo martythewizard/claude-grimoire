@@ -7,8 +7,6 @@ echo "Testing initiative-creator parameter parsing..."
 
 # Helper function to parse parameters
 parse_params() {
-  local params="$*"
-
   # Initialize variables
   issue=""
   title=""
@@ -76,11 +74,7 @@ parse_params() {
   elif [ -n "$issue" ] || [ -n "$project" ] || [ -n "$initiative" ] || [ -n "$milestone" ]; then
     echo "linking"
   elif [ -n "$title" ] && [ -n "$body" ]; then
-    if [ -n "$project" ] || [ -n "$initiative" ]; then
-      echo "linking"
-    else
-      echo "standalone"
-    fi
+    echo "standalone"
   else
     echo "interactive"
   fi
@@ -171,6 +165,16 @@ if [ "$mode" = "linking" ]; then
   echo "✓ Detected linking mode (full parameters)"
 else
   echo "✗ Expected linking, got $mode"
+  exit 1
+fi
+
+echo ""
+echo "Test 9: --yaml overrides other parameters"
+mode=$(parse_params --yaml --title "Task" --body "Desc" --project org#14)
+if [ "$mode" = "full-initiative" ]; then
+  echo "✓ Detected full-initiative mode (--yaml overrides)"
+else
+  echo "✗ Expected full-initiative, got $mode"
   exit 1
 fi
 
