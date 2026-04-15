@@ -216,17 +216,15 @@ fi
 # Function: Resolve repository for a JIRA task's github_issue
 # Arguments:
 #   $1 - task_key (JIRA task key, for error messages)
-#   $2 - github_issue (issue number)
-#   $3 - epic_milestone (milestone title from epic)
-#   $4 - yaml_file (path to YAML file)
+#   $2 - epic_milestone (milestone title from epic)
+#   $3 - yaml_file (path to YAML file)
 # Returns:
 #   Prints repo to stdout (or empty if cannot resolve)
 #   Adds warnings to JIRA_FINDINGS array
 resolve_repo() {
     local task_key="$1"
-    local github_issue="$2"
-    local epic_milestone="$3"
-    local yaml_file="$4"
+    local epic_milestone="$2"
+    local yaml_file="$3"
     
     # Step 1: Check for explicit repo field
     local explicit_repo=$(grep -A 3 "key: $task_key" "$yaml_file" | grep "repo:" | awk '{print $2}')
@@ -246,7 +244,6 @@ resolve_repo() {
     
     # Find workstreams with matching milestone title
     local matching_repos=()
-    local workstream_data=""
     local current_repo=""
     local in_milestones=false
     
@@ -266,6 +263,7 @@ resolve_repo() {
                 in_milestones=false  # Only match once per workstream
             fi
         fi
+    # Use -A 500 (consistent with project's YAML parsing limit)
     done < <(grep -A 500 "^workstreams:" "$yaml_file")
     
     # Step 3: Handle results
