@@ -133,43 +133,79 @@ else
 fi
 ```
 
-### Step 3: Validate JIRA Epics
+### Step 3: Validate Workstreams and Milestones (Optional)
 
-For each epic in `jira.epics:`, verify accessibility:
+For each workstream, check repo exists and milestone numbers are valid:
 
 ```bash
-# Extract JIRA URL from config
-JIRA_URL="${JIRA_URL:-https://jira.company.com}"
-JIRA_TOKEN="${JIRA_API_TOKEN}"
-
-# Extract epic keys from YAML
-EPIC_KEYS=$(grep -A 50 "^jira:" "$YAML_FILE" | grep "  - key:" | awk '{print $3}')
-
-JIRA_FINDINGS=()
-
-for epic_key in $EPIC_KEYS; do
-    # Validate epic key format (PROJECT-123)
-    if ! [[ "$epic_key" =~ ^[A-Z]+-[0-9]+$ ]]; then
-        JIRA_FINDINGS+=("Critical: Malformed epic key '$epic_key' (expected format: PROJECT-123)")
-        continue
-    fi
+# Check if workstreams section exists
+if grep -q "^workstreams:" "$YAML_FILE"; then
+    echo "Validating Workstreams..."
     
-    # Check if epic exists
-    STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-        -H "Authorization: Bearer $JIRA_TOKEN" \
-        "$JIRA_URL/rest/api/3/issue/$epic_key")
+    # Extract workstreams (multi-line parsing)
+    # We'll parse workstream names and repos manually
+    WORKSTREAM_COUNT=0
+    MILESTONE_COUNT=0
     
-    if [ "$STATUS_CODE" -eq 200 ]; then
-        echo "✅ JIRA epic found: $epic_key"
-    elif [ "$STATUS_CODE" -eq 404 ]; then
-        JIRA_FINDINGS+=("Warning: JIRA epic not found: $epic_key")
-    elif [ "$STATUS_CODE" -eq 401 ]; then
-        JIRA_FINDINGS+=("Warning: JIRA authentication failed - skipping remaining JIRA validation")
-        break
-    else
-        JIRA_FINDINGS+=("Warning: Unable to verify JIRA epic $epic_key (HTTP $STATUS_CODE)")
-    fi
-done
+    # Get all workstream names
+    WORKSTREAM_NAMES=$(grep -A 500 "^workstreams:" "$YAML_FILE" | grep "  - name:" | sed 's/.*name: "\?\([^"]*\)"\?/\1/')
+    
+    while IFS= read -r ws_name; do
+        [ -z "$ws_name" ] && continue
+        WORKSTREAM_COUNT=$((WORKSTREAM_COUNT + 1))
+        
+        # Find repo for this workstream (next line after name)
+        WS_REPO=$(grep -A 1 "name: \"$ws_name\"" "$YAML_FILE" | grep "repo:" | awk '{print $2}')
+        
+        if [ -z "$WS_REPO" ]; then
+            GITHUB_FINDINGS+=("Warning: Workstream '$ws_name' missing repo field")
+            continue
+        fi
+        
+        # Validate repo exists
+        if gh api repos/$WS_REPO --jq '.name' > /dev/null 2>&1; then
+            echo "✅ Workstream '$ws_name': repo $WS_REPO found"
+        else
+            GITHUB_FINDINGS+=("Warning: Workstream '$ws_name' repo not found: $WS_REPO")
+            continue
+        fi
+        
+        # Extract milestone numbers for this workstream
+        # Find milestones section within this workstream block
+        MS_NUMBERS=$(grep -A 100 "name: \"$ws_name\"" "$YAML_FILE" | \
+                     grep -A 50 "milestones:" | \
+                     grep "number:" | \
+                     head -20 | \
+                     awk '{print $2}')
+        
+        for ms_number in $MS_NUMBERS; do
+            [ -z "$ms_number" ] && continue
+            MILESTONE_COUNT=$((MILESTONE_COUNT + 1))
+            
+            # Validate milestone number exists in repo
+            MS_DATA=$(gh api repos/$WS_REPO/milestones/$ms_number --jq '{title: .title, state: .state}' 2>&1)
+            GH_EXIT_CODE=$?
+            
+            if [ $GH_EXIT_CODE -eq 0 ]; then
+                MS_TITLE=$(echo "$MS_DATA" | jq -r '.title')
+                MS_STATE=$(echo "$MS_DATA" | jq -r '.state')
+                echo "✅ Milestone #$ms_number found: $MS_TITLE (state: $MS_STATE)"
+                
+                if [ "$MS_STATE" = "closed" ]; then
+                    GITHUB_FINDINGS+=("Info: Milestone #$ms_number in $WS_REPO is closed")
+                fi
+            else
+                GITHUB_FINDINGS+=("Warning: Milestone #$ms_number not found in repo $WS_REPO")
+            fi
+        done
+        
+    done <<< "$WORKSTREAM_NAMES"
+    
+    echo "Validated $WORKSTREAM_COUNT workstreams with $MILESTONE_COUNT milestones"
+    
+else
+    echo "ℹ️  Workstreams: Not configured (skipped)"
+fi
 ```
 
 ### Step 4: Validate Confluence Page
