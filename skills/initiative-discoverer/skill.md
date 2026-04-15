@@ -31,7 +31,7 @@ Invoke this skill after creating an initiative YAML, or periodically to find wor
 
 ## Workflow
 
-### Step 1: Extract Context from YAML
+### Step 1: Extract Context from Schema v2 YAML
 
 Ask user for YAML file path:
 ```
@@ -49,18 +49,17 @@ if [ ! -f "$YAML_FILE" ]; then
     exit 1
 fi
 
-# Extract JIRA project key (required)
-PROJECT_KEY=$(grep "project_key:" "$YAML_FILE" | awk '{print $2}' | tr -d '"')
-if [ -z "$PROJECT_KEY" ]; then
-    echo "Error: Missing jira.project_key in YAML. Cannot search without project key."
-    echo "Add: jira:"
-    echo "      project_key: YOUR_PROJECT"
+# Validate schema v2
+SCHEMA_VERSION=$(grep "^schema_version:" "$YAML_FILE" | awk '{print $2}')
+if [ "$SCHEMA_VERSION" != "2" ]; then
+    echo "Error: Expected schema_version: 2, got: $SCHEMA_VERSION"
+    echo "This skill only supports schema v2."
     exit 1
 fi
 
-# Extract initiative metadata for context
-INITIATIVE_NAME=$(grep "^name:" "$YAML_FILE" | sed 's/name: "\(.*\)"/\1/')
-INITIATIVE_DESC=$(grep "^description:" "$YAML_FILE" | sed 's/description: "\(.*\)"/\1/')
+# Extract initiative metadata
+INITIATIVE_NAME=$(grep "^name:" "$YAML_FILE" | sed 's/name: "\?\([^"]*\)"\?/\1/')
+INITIATIVE_DESC=$(grep "^description:" "$YAML_FILE" | sed 's/description: "\?\([^"]*\)"\?/\1/')
 
 # Extract team members (for filtering)
 TEAM_MEMBERS=$(grep -A 50 "^team:" "$YAML_FILE" | grep "  - " | awk '{print $2}' | tr '\n' ',' | sed 's/,$//')
@@ -68,18 +67,40 @@ TEAM_MEMBERS=$(grep -A 50 "^team:" "$YAML_FILE" | grep "  - " | awk '{print $2}'
 # Extract tags (for keyword matching)
 TAGS=$(grep -A 50 "^tags:" "$YAML_FILE" | grep "  - " | awk '{print $2}' | tr '\n' ' ')
 
-# Extract repos (for description matching)
-REPOS=$(grep -A 100 "^repos:" "$YAML_FILE" | grep "  - name:" | awk '{print $3}' | tr '\n' ' ')
+# Extract GitHub Project (if configured)
+if grep -q "^github_project:" "$YAML_FILE"; then
+    PROJECT_ORG=$(grep -A 3 "^github_project:" "$YAML_FILE" | grep "org:" | awk '{print $2}')
+    PROJECT_NUMBER=$(grep -A 3 "^github_project:" "$YAML_FILE" | grep "number:" | awk '{print $2}')
+    echo "GitHub Project: $PROJECT_ORG#$PROJECT_NUMBER"
+else
+    PROJECT_ORG=""
+    PROJECT_NUMBER=""
+    echo "GitHub Project: Not configured"
+fi
 
-# Extract existing epic keys (for deduplication)
-EXISTING_EPICS=$(grep -A 100 "^jira:" "$YAML_FILE" | grep "  - key:" | awk '{print $3}' | tr '\n' ',' | sed 's/,$//')
+# Extract workstream repos
+WORKSTREAM_REPOS=$(grep -A 500 "^workstreams:" "$YAML_FILE" | grep "repo:" | awk '{print $2}' | sort -u)
+echo "Workstream repos: $(echo $WORKSTREAM_REPOS | tr '\n' ', ')"
 
-echo "Context extracted:"
-echo "  Project: $PROJECT_KEY"
-echo "  Initiative: $INITIATIVE_NAME"
-echo "  Team: $TEAM_MEMBERS"
-echo "  Tags: $TAGS"
-echo "  Existing epics: $EXISTING_EPICS"
+# Extract existing github_issue numbers from JIRA epic tasks (for deduplication)
+EXISTING_ISSUES=$(grep -A 500 "^jira:" "$YAML_FILE" | grep "github_issue:" | awk '{print $2}' | sort -n | tr '\n' ',' | sed 's/,$//')
+
+if [ -n "$EXISTING_ISSUES" ]; then
+    echo "Existing tracked issues: $EXISTING_ISSUES"
+else
+    echo "Existing tracked issues: None"
+fi
+
+# Extract JIRA project key (optional)
+if grep -q "^jira:" "$YAML_FILE" && grep -q "project_key:" "$YAML_FILE"; then
+    PROJECT_KEY=$(grep "project_key:" "$YAML_FILE" | awk '{print $2}' | tr -d '"')
+    echo "JIRA Project: $PROJECT_KEY"
+else
+    PROJECT_KEY=""
+    echo "JIRA: Not configured"
+fi
+
+echo "Context extraction complete."
 ```
 
 ### Step 2: Search JIRA for Candidate Epics
