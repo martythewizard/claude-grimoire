@@ -1,7 +1,7 @@
 ---
 name: initiative-discoverer
-description: Find existing JIRA epics that should be tracked in an initiative using AI-driven matching
-version: 1.0.0
+description: Find untracked GitHub issues in Projects and workstream repos using AI-driven matching (schema v2)
+version: 2.0.0
 ---
 
 # Initiative Discoverer Skill
