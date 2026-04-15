@@ -524,6 +524,30 @@ export ANTHROPIC_API_KEY="your-claude-api-key"
 - **AI ranking fails:** Fall back to heuristic ranking, continue, exit 0
 - **All candidates low score:** Report ambiguous matches, provide best-effort results, exit 0
 
+## Changelog
+
+### v2.0.0 - Schema v2 Support (2026-04-15)
+
+**Breaking Changes:**
+- Only supports schema v2 (schema_version: 2)
+- Use v1.0.0 for legacy schema v1 files
+
+**New Features:**
+- Discovers untracked issues in GitHub Project v2 via GraphQL
+- Searches workstream repos for untracked issues
+- Deduplicates against JIRA epic task github_issue references
+- Suggests additions in schema v2 format (JIRA epic tasks)
+- AI ranking uses GitHub issue data (repo, milestone, labels, assignees)
+
+**Removed:**
+- Direct JIRA epic discovery (GitHub-first approach)
+- Support for `repos:` array (replaced by `workstreams:`)
+
+**Migration:**
+- All initiatives in eci-global/initiatives use schema v2
+- No migration needed for users (discoverer auto-detects schema version)
+- Output format changed: suggests JIRA epic task additions instead of epic additions
+
 ## Examples
 
 See `examples/` directory for:
