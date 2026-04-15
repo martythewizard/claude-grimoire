@@ -217,34 +217,59 @@ REPO_COUNT=$(echo "$REPO_CANDIDATES" | grep -c "^" || echo "0")
 echo "Total: $REPO_COUNT open issues across workstream repos"
 ```
 
-### Step 4: Deduplicate Against Existing Epics
+### Step 4: Deduplicate Against Tracked Issues
 
-Filter out already-tracked epics:
+Remove issues already tracked in JIRA epic tasks:
 
 ```bash
+echo "Deduplicating candidates..."
+
+# Combine project and repo candidates
+ALL_CANDIDATES="$PROJECT_CANDIDATES"$'\n'"$REPO_CANDIDATES"
+ALL_CANDIDATES=$(echo "$ALL_CANDIDATES" | sed '/^$/d')
+
 UNTRACKED_CANDIDATES=""
 
-while IFS='|' read -r key summary description assignee reporter created; do
-    # Check if epic is already tracked
-    if [[ ",$EXISTING_EPICS," == *",$key,"* ]]; then
-        echo "Skipping $key (already tracked)"
+while IFS='|' read -r number title repo_or_milestone milestone_or_assignee assignee_or_labels labels_or_repo extra; do
+    [ -z "$number" ] && continue
+    
+    # Normalize fields based on source (project vs repo)
+    if [ -n "$extra" ]; then
+        # From repo search: number|title|milestone|assignee|labels|repo
+        issue_num="$number"
+        issue_title="$title"
+        issue_repo="$labels_or_repo"
+        issue_milestone="$repo_or_milestone"
+        issue_assignee="$milestone_or_assignee"
+        issue_labels="$assignee_or_labels"
+    else
+        # From project search: number|title|repo|milestone|assignee|labels
+        issue_num="$number"
+        issue_title="$title"
+        issue_repo="$repo_or_milestone"
+        issue_milestone="$milestone_or_assignee"
+        issue_assignee="$assignee_or_labels"
+        issue_labels="$labels_or_repo"
+    fi
+    
+    # Check if issue is already tracked
+    if [[ ",$EXISTING_ISSUES," == *",$issue_num,"* ]]; then
+        echo "Skipping #$issue_num (already tracked in JIRA epic tasks)"
         continue
     fi
     
     # Add to untracked list
-    if [ -z "$UNTRACKED_CANDIDATES" ]; then
-        UNTRACKED_CANDIDATES="$key|$summary|$description|$assignee|$reporter|$created"
-    else
-        UNTRACKED_CANDIDATES="$UNTRACKED_CANDIDATES
-$key|$summary|$description|$assignee|$reporter|$created"
-    fi
-done <<< "$CANDIDATES"
+    UNTRACKED_CANDIDATES="$UNTRACKED_CANDIDATES"$'\n'"$issue_num|$issue_title|$issue_repo|$issue_milestone|$issue_assignee|$issue_labels"
+done <<< "$ALL_CANDIDATES"
 
-UNTRACKED_COUNT=$(echo "$UNTRACKED_CANDIDATES" | grep -c '^')
-echo "After deduplication: $UNTRACKED_COUNT untracked epics"
+# Remove leading newline and duplicates
+UNTRACKED_CANDIDATES=$(echo "$UNTRACKED_CANDIDATES" | sed '/^$/d' | sort -u -t'|' -k1,1n)
+
+UNTRACKED_COUNT=$(echo "$UNTRACKED_CANDIDATES" | grep -c "^" || echo "0")
+echo "Found $UNTRACKED_COUNT untracked issues after deduplication"
 
 if [ "$UNTRACKED_COUNT" -eq 0 ]; then
-    echo "No untracked epics found after deduplication. Initiative is complete!"
+    echo "No untracked issues found. Initiative appears to be fully tracked!"
     exit 0
 fi
 ```
