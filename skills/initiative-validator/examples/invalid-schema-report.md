@@ -1,31 +1,27 @@
-# Validation Report: new-initiative.yaml
+# Validation Report: invalid-initiative.yaml
 
 ## Summary
-- ❌ Schema: FAILED - missing required fields
-- ⚠️ GitHub: Validation skipped (schema must pass first)
-- ⚠️ JIRA: Validation skipped (schema must pass first)
-- ⚠️ Confluence: Validation skipped (schema must pass first)
+- ❌ Schema v2: INVALID
+- ⚠️ Cannot proceed with further validation until schema is fixed
 
 ## Critical Issues
 
 ### Schema Validation Errors
-- Critical: Missing required field 'owner'
-  - **Action:** Add `owner: GitHubUsername` to YAML
-  
-- Critical: Missing required field 'description'
-  - **Action:** Add `description: "One-sentence summary of initiative"` to YAML
-
-- Critical: Invalid status value 'in-progress'. Must be one of: active, planning, paused, completed, cancelled
-  - **Action:** Change `status: in-progress` to `status: active`
+- **Critical:** Expected schema_version: 2, got: 1
+- **Message:** This skill only supports schema v2. Please use initiative-validator v1.0.0 for older schemas.
 
 ## Warnings
-External validations cannot run until schema validation passes.
+None (validation stopped at schema check)
 
 ## Info
-Fix critical schema errors above, then re-run validation to check GitHub/JIRA/Confluence references.
+Schema v2 required fields:
+- `schema_version: 2`
+- `name: string`
+- `description: string`
+- `status: active | planning | paused | completed | cancelled`
+- `owner: string`
 
 ## Action Items for Initiative Owner
-1. Add missing required fields: owner, description
-2. Fix status enum value
-3. Re-run validation after schema is corrected
-4. Once schema passes, external validations will run automatically
+1. Update schema_version to 2
+2. Ensure all required fields are present and correctly formatted
+3. Re-run validation after fixing schema
