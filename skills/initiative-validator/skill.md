@@ -1,7 +1,7 @@
 ---
 name: initiative-validator
-description: Validate initiative YAML files against GitHub, JIRA, and Confluence
-version: 1.0.0
+description: Validate initiative YAML files (schema v2) against GitHub Projects, workstreams, JIRA epic tasks, and Confluence
+version: 2.0.0
 ---
 
 # Initiative Validator Skill
