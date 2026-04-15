@@ -213,6 +213,80 @@ else
 fi
 ```
 
+# Function: Resolve repository for a JIRA task's github_issue
+# Arguments:
+#   $1 - task_key (JIRA task key, for error messages)
+#   $2 - github_issue (issue number)
+#   $3 - epic_milestone (milestone title from epic)
+#   $4 - yaml_file (path to YAML file)
+# Returns:
+#   Prints repo to stdout (or empty if cannot resolve)
+#   Adds warnings to JIRA_FINDINGS array
+resolve_repo() {
+    local task_key="$1"
+    local github_issue="$2"
+    local epic_milestone="$3"
+    local yaml_file="$4"
+    
+    # Step 1: Check for explicit repo field
+    local explicit_repo=$(grep -A 3 "key: $task_key" "$yaml_file" | grep "repo:" | awk '{print $2}')
+    
+    if [ -n "$explicit_repo" ]; then
+        echo "$explicit_repo"
+        return 0
+    fi
+    
+    # Step 2: Infer from milestone
+    # Check if workstreams section exists
+    if ! grep -q "^workstreams:" "$yaml_file"; then
+        JIRA_FINDINGS+=("Error: Cannot infer repo for task $task_key, no workstreams defined")
+        echo ""
+        return 1
+    fi
+    
+    # Find workstreams with matching milestone title
+    local matching_repos=()
+    local workstream_data=""
+    local current_repo=""
+    local in_milestones=false
+    
+    while IFS= read -r line; do
+        # Track current repo
+        if echo "$line" | grep -q "^  - name:"; then
+            current_repo=""
+            in_milestones=false
+        elif echo "$line" | grep -q "    repo:"; then
+            current_repo=$(echo "$line" | awk '{print $2}')
+        elif echo "$line" | grep -q "    milestones:"; then
+            in_milestones=true
+        elif echo "$line" | grep -q "      - title:" && [ "$in_milestones" = true ]; then
+            local ms_title=$(echo "$line" | sed 's/.*title: "\?\([^"]*\)"\?/\1/')
+            if [ "$ms_title" = "$epic_milestone" ] && [ -n "$current_repo" ]; then
+                matching_repos+=("$current_repo")
+                in_milestones=false  # Only match once per workstream
+            fi
+        fi
+    done < <(grep -A 500 "^workstreams:" "$yaml_file")
+    
+    # Step 3: Handle results
+    if [ ${#matching_repos[@]} -eq 0 ]; then
+        JIRA_FINDINGS+=("Warning: Cannot infer repo for task $task_key, milestone '$epic_milestone' not found in workstreams")
+        echo ""
+        return 1
+    fi
+    
+    if [ ${#matching_repos[@]} -eq 1 ]; then
+        echo "${matching_repos[0]}"
+        return 0
+    fi
+    
+    # Multiple matches - ambiguous
+    local repos_list=$(IFS=,; echo "${matching_repos[*]}")
+    JIRA_FINDINGS+=("Warning: Ambiguous repo for task $task_key, milestone '$epic_milestone' in multiple workstreams: $repos_list. Using ${matching_repos[0]}")
+    echo "${matching_repos[0]}"
+    return 0
+}
+
 ### Step 4: Validate JIRA Epic Tasks (Optional)
 
 For each JIRA epic task, verify github_issue reference is valid:
