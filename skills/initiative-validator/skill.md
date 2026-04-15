@@ -86,12 +86,17 @@ Check if github_project exists and is accessible:
 if grep -q "^github_project:" "$YAML_FILE"; then
     echo "Validating GitHub Project..."
     
+    # Initialize GITHUB_FINDINGS array
+    GITHUB_FINDINGS=()
+    
     # Extract project org and number
     PROJECT_ORG=$(grep -A 5 "^github_project:" "$YAML_FILE" | grep "  org:" | awk '{print $2}')
     PROJECT_NUMBER=$(grep -A 5 "^github_project:" "$YAML_FILE" | grep "  number:" | awk '{print $2}')
     
     if [ -z "$PROJECT_ORG" ] || [ -z "$PROJECT_NUMBER" ]; then
         GITHUB_FINDINGS+=("Critical: github_project missing required fields (org, number)")
+    elif ! [[ "$PROJECT_NUMBER" =~ ^[0-9]+$ ]]; then
+        GITHUB_FINDINGS+=("Critical: PROJECT_NUMBER must be numeric, got: $PROJECT_NUMBER")
     else
         # Query GitHub Project v2 via GraphQL
         QUERY='query($org: String!, $number: Int!) {
@@ -125,11 +130,6 @@ if grep -q "^github_project:" "$YAML_FILE"; then
     fi
 else
     echo "ℹ️  GitHub Project: Not configured (skipped)"
-fi
-
-# Initialize GITHUB_FINDINGS if not set
-if [ -z "${GITHUB_FINDINGS+x}" ]; then
-    GITHUB_FINDINGS=()
 fi
 ```
 
