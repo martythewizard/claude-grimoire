@@ -6,28 +6,28 @@ version: 2.0.0
 
 # Initiative Validator Skill
 
-Validate initiative YAML files end-to-end against GitHub milestones, JIRA epics, and Confluence pages. Generates actionable reports organized by severity.
-
 ## Purpose
 
 This skill helps you:
-- Validate YAML schema before committing to the initiatives registry
-- Check that GitHub milestones referenced in YAML actually exist
-- Verify JIRA epic keys are accessible and correctly formatted
-- Confirm Confluence pages exist and are reachable
-- Get clear, actionable reports to fix issues
+- Validate YAML schema v2 before committing to the initiatives registry
+- Check that GitHub Project exists and is accessible (if configured)
+- Verify workstream repos and milestone numbers exist
+- Validate JIRA epic task github_issue references point to real issues
+- Confirm Confluence pages exist and are reachable (if configured)
+- Get clear, actionable reports organized by workstream
 
 ## When to Use
 
-Invoke this skill before committing changes to initiative YAML files, or when you suspect an initiative's external references are stale.
+Invoke this skill before committing changes to initiative YAML files in eci-global/initiatives, or when you suspect an initiative's external references are stale.
 
 ## How It Works
 
-1. **Parse YAML** - Validate schema and extract references
-2. **Validate GitHub** - Check milestones exist in each repo
-3. **Validate JIRA** - Verify epic keys are accessible
-4. **Validate Confluence** - Confirm pages exist
-5. **Generate Report** - Output markdown organized by severity (Critical/Warning/Info)
+1. **Parse YAML** - Validate schema v2 and extract references
+2. **Validate GitHub Project** - Check project exists via GraphQL (if present)
+3. **Validate Workstreams** - Check repos exist and milestones are valid
+4. **Validate JIRA Epic Tasks** - Verify github_issue references (if present)
+5. **Validate Confluence** - Confirm pages exist (if present)
+6. **Generate Report** - Output markdown organized by severity and workstream
 
 ## Workflow
 
