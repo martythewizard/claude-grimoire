@@ -154,6 +154,10 @@ if [ -n "$PROJECT_ORG" ] && [ -n "$PROJECT_NUMBER" ]; then
     if [ $GH_EXIT_CODE -ne 0 ]; then
         echo "Warning: GitHub API failed, skipping GitHub Project search"
         PROJECT_CANDIDATES=""
+    elif echo "$RESPONSE" | jq -e '.errors' > /dev/null 2>&1; then
+        echo "Warning: GraphQL errors in response, skipping GitHub Project search"
+        echo "$RESPONSE" | jq -r '.errors[].message' 2>/dev/null || echo "Unknown GraphQL error"
+        PROJECT_CANDIDATES=""
     else
         # Extract issues from project (pipe-delimited format)
         PROJECT_CANDIDATES=$(echo "$RESPONSE" | jq -r '
