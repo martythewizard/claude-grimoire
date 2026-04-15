@@ -77,33 +77,59 @@ fi
 echo "✅ Schema v2 validation passed"
 ```
 
-### Step 2: Validate GitHub Milestones
+### Step 2: Validate GitHub Project (Optional)
 
-For each repo in `repos:`, check if milestones exist:
+Check if github_project exists and is accessible:
 
 ```bash
-# Extract repos from YAML (assumes yq is available, or parse manually)
-REPOS=$(grep -A 100 "^repos:" "$YAML_FILE" | grep "  - name:" | awk '{print $3}')
-
-GITHUB_FINDINGS=()
-
-for repo in $REPOS; do
-    # Extract milestones for this repo
-    MILESTONES=$(grep -A 50 "name: $repo" "$YAML_FILE" | grep "    - \"" | sed 's/.*"\(.*\)".*/\1/')
+# Check if github_project section exists
+if grep -q "^github_project:" "$YAML_FILE"; then
+    echo "Validating GitHub Project..."
     
-    for milestone in $MILESTONES; do
-        # Check if milestone exists via gh CLI
-        if gh api repos/$repo/milestones --jq ".[] | select(.title == \"$milestone\") | .title" | grep -q "$milestone"; then
-            echo "✅ GitHub milestone found: $repo -> $milestone"
+    # Extract project org and number
+    PROJECT_ORG=$(grep -A 5 "^github_project:" "$YAML_FILE" | grep "  org:" | awk '{print $2}')
+    PROJECT_NUMBER=$(grep -A 5 "^github_project:" "$YAML_FILE" | grep "  number:" | awk '{print $2}')
+    
+    if [ -z "$PROJECT_ORG" ] || [ -z "$PROJECT_NUMBER" ]; then
+        GITHUB_FINDINGS+=("Critical: github_project missing required fields (org, number)")
+    else
+        # Query GitHub Project v2 via GraphQL
+        QUERY='query($org: String!, $number: Int!) {
+          organization(login: $org) {
+            projectV2(number: $number) {
+              id
+              title
+              url
+              closed
+            }
+          }
+        }'
+        
+        RESPONSE=$(gh api graphql -f query="$QUERY" -f org="$PROJECT_ORG" -F number="$PROJECT_NUMBER" 2>&1)
+        GH_EXIT_CODE=$?
+        
+        if [ $GH_EXIT_CODE -ne 0 ]; then
+            GITHUB_FINDINGS+=("Warning: GitHub API authentication failed - skipping GitHub Project validation")
+        elif echo "$RESPONSE" | jq -e '.data.organization.projectV2.id' > /dev/null 2>&1; then
+            PROJECT_TITLE=$(echo "$RESPONSE" | jq -r '.data.organization.projectV2.title')
+            PROJECT_CLOSED=$(echo "$RESPONSE" | jq -r '.data.organization.projectV2.closed')
+            
+            if [ "$PROJECT_CLOSED" = "true" ]; then
+                GITHUB_FINDINGS+=("Warning: GitHub Project #$PROJECT_NUMBER is closed")
+            else
+                echo "✅ GitHub Project found: $PROJECT_ORG#$PROJECT_NUMBER ($PROJECT_TITLE)"
+            fi
         else
-            GITHUB_FINDINGS+=("Warning: Milestone '$milestone' not found in repo $repo")
+            GITHUB_FINDINGS+=("Warning: GitHub Project #$PROJECT_NUMBER not found or not accessible in org $PROJECT_ORG")
         fi
-    done
-done
+    fi
+else
+    echo "ℹ️  GitHub Project: Not configured (skipped)"
+fi
 
-# Check for auth errors
-if [ $? -ne 0 ]; then
-    GITHUB_FINDINGS+=("Warning: GitHub API authentication failed - skipping GitHub validation")
+# Initialize GITHUB_FINDINGS if not set
+if [ -z "${GITHUB_FINDINGS+x}" ]; then
+    GITHUB_FINDINGS=()
 fi
 ```
 
