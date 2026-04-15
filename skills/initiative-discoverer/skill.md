@@ -274,131 +274,98 @@ if [ "$UNTRACKED_COUNT" -eq 0 ]; then
 fi
 ```
 
-### Step 5: Rank Candidates with AI
+### Step 5: AI Ranking of Candidates
 
-Use Claude to score each candidate:
+Score each candidate using Claude API for relevance:
 
 ```bash
-# Claude API configuration
-CLAUDE_API_KEY="${ANTHROPIC_API_KEY}"
-CLAUDE_API_URL="https://api.anthropic.com/v1/messages"
+echo "Ranking candidates with AI..."
 
-# Check if AI ranking is available
-USE_AI_RANKING=true
-if [ -z "$CLAUDE_API_KEY" ]; then
-    echo "Warning: ANTHROPIC_API_KEY not set. Falling back to heuristic ranking."
-    USE_AI_RANKING=false
+# Check for Claude API key
+ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}"
+if [ -z "$ANTHROPIC_API_KEY" ]; then
+    echo "Warning: ANTHROPIC_API_KEY not set, using heuristic scoring"
+    USE_AI=false
+else
+    USE_AI=true
 fi
 
-RANKED_CANDIDATES=""
+SCORED_CANDIDATES=""
 
-while IFS='|' read -r key summary description assignee reporter created; do
-    if [ "$USE_AI_RANKING" = true ]; then
-        # AI-driven ranking
-        PROMPT="You are analyzing whether JIRA epic $key belongs to initiative \"$INITIATIVE_NAME\".
+while IFS='|' read -r issue_num issue_title issue_repo issue_milestone issue_assignee issue_labels; do
+    [ -z "$issue_num" ] && continue
+    
+    if [ "$USE_AI" = true ]; then
+        # AI-powered scoring via Claude API
+        PROMPT="Score this GitHub issue's relevance to the initiative on a scale of 1-10.
 
-Initiative context:
-- Description: $INITIATIVE_DESC
-- Tags: $TAGS
-- Team: $TEAM_MEMBERS
-- Repos: $REPOS
+Initiative: $INITIATIVE_NAME
+Description: $INITIATIVE_DESC
+Tags: $TAGS
 
-Epic context:
-- Summary: $summary
-- Description: ${description:0:500}
-- Assignee: $assignee
-- Reporter: $reporter
-- Created: $created
+Issue #$issue_num: $issue_title
+Repo: $issue_repo
+Milestone: $issue_milestone
+Assignee: $issue_assignee
+Labels: $issue_labels
 
-Score this epic from 1-10 based on relevance to the initiative:
-- 9-10: Definitely belongs, core work
-- 7-8: Probably belongs, related work
-- 5-6: Maybe belongs, tangential work
-- 3-4: Unlikely to belong, weak connection
-- 1-2: Definitely doesn't belong, unrelated
+Respond with ONLY: {\"score\": <number>, \"reasoning\": \"<brief explanation>\"}"
 
-Return only JSON (no markdown):
-{
-  \"score\": <1-10>,
-  \"reasoning\": \"<why this score in 1 sentence>\",
-  \"suggested_milestone\": \"<milestone name or 'unassigned'>\"
-}"
-
-        # Call Claude API
-        AI_RESPONSE=$(curl -s -X POST "$CLAUDE_API_URL" \
-            -H "Content-Type: application/json" \
-            -H "x-api-key: $CLAUDE_API_KEY" \
+        RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
             -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
             -d "{
-                \"model\": \"claude-sonnet-4-20250514\",
-                \"max_tokens\": 500,
-                \"messages\": [{
-                    \"role\": \"user\",
-                    \"content\": $(echo "$PROMPT" | jq -R -s '.')
-                }]
+                \"model\": \"claude-3-5-sonnet-20241022\",
+                \"max_tokens\": 150,
+                \"messages\": [{\"role\": \"user\", \"content\": \"$PROMPT\"}]
             }")
         
-        # Extract JSON from response
-        AI_CONTENT=$(echo "$AI_RESPONSE" | jq -r '.content[0].text')
-        SCORE=$(echo "$AI_CONTENT" | jq -r '.score')
-        REASONING=$(echo "$AI_CONTENT" | jq -r '.reasoning')
-        MILESTONE=$(echo "$AI_CONTENT" | jq -r '.suggested_milestone')
-        
-        # Check for API errors
-        if [ -z "$SCORE" ] || [ "$SCORE" = "null" ]; then
-            echo "Warning: AI ranking failed for $key. Using heuristic fallback."
-            SCORE=$(heuristic_score "$summary" "$description")
-            REASONING="Heuristic: keyword match count"
-            MILESTONE="unassigned"
-        fi
+        # Extract score and reasoning
+        SCORE=$(echo "$RESPONSE" | jq -r '.content[0].text' | jq -r '.score // 5')
+        REASONING=$(echo "$RESPONSE" | jq -r '.content[0].text' | jq -r '.reasoning // "No reasoning provided"')
     else
-        # Heuristic ranking fallback
-        SCORE=$(heuristic_score "$summary" "$description")
-        REASONING="Heuristic: keyword match count with initiative terms"
-        MILESTONE="unassigned"
+        # Heuristic scoring fallback
+        SCORE=5
+        REASONING="Heuristic scoring (no Claude API key)"
+        
+        # Boost score if initiative name appears in title
+        if echo "$issue_title" | grep -qi "$INITIATIVE_NAME"; then
+            SCORE=$((SCORE + 3))
+            REASONING="$REASONING. Initiative name in title (+3)"
+        fi
+        
+        # Boost score if tags appear in labels
+        for tag in $TAGS; do
+            if echo "$issue_labels" | grep -qi "$tag"; then
+                SCORE=$((SCORE + 2))
+                REASONING="$REASONING. Tag '$tag' in labels (+2)"
+                break
+            fi
+        done
+        
+        # Boost if repo is in workstreams
+        if echo "$WORKSTREAM_REPOS" | grep -q "$issue_repo"; then
+            SCORE=$((SCORE + 1))
+            REASONING="$REASONING. In workstream repo (+1)"
+        fi
+        
+        # Cap at 10
+        if [ "$SCORE" -gt 10 ]; then
+            SCORE=10
+        fi
     fi
     
-    # Add to ranked list with score
-    RANKED_CANDIDATES="$RANKED_CANDIDATES
-$SCORE|$key|$summary|$REASONING|$MILESTONE|$assignee"
+    # Add to scored list
+    SCORED_CANDIDATES="$SCORED_CANDIDATES"$'\n'"$SCORE|$issue_num|$issue_title|$issue_repo|$issue_milestone|$issue_assignee|$issue_labels|$REASONING"
+    
+    echo "Scored #$issue_num: $SCORE/10"
 done <<< "$UNTRACKED_CANDIDATES"
 
-# Sort by score (descending)
-RANKED_CANDIDATES=$(echo "$RANKED_CANDIDATES" | sort -t'|' -k1 -nr)
+# Sort by score descending
+SCORED_CANDIDATES=$(echo "$SCORED_CANDIDATES" | sed '/^$/d' | sort -t'|' -k1,1nr)
 
-# Heuristic scoring function (keyword overlap)
-heuristic_score() {
-    local summary="$1"
-    local description="$2"
-    local score=0
-    
-    # Check for initiative name in epic
-    if echo "$summary $description" | grep -qi "$INITIATIVE_NAME"; then
-        score=$((score + 5))
-    fi
-    
-    # Check for tag keywords
-    for tag in $TAGS; do
-        if echo "$summary $description" | grep -qi "$tag"; then
-            score=$((score + 2))
-        fi
-    done
-    
-    # Check for repo names
-    for repo in $REPOS; do
-        repo_name=$(echo "$repo" | cut -d'/' -f2)
-        if echo "$summary $description" | grep -qi "$repo_name"; then
-            score=$((score + 2))
-        fi
-    done
-    
-    # Cap at 10
-    if [ "$score" -gt 10 ]; then
-        score=10
-    fi
-    
-    echo "$score"
-}
+echo "Ranking complete."
 ```
 
 ### Step 6: Generate Suggestions
