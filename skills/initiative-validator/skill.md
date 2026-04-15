@@ -564,6 +564,29 @@ export CONFLUENCE_API_TOKEN="your-token-here"
 - **Network timeout:** Mark as "unable to verify", continue, exit 0
 - **Resource not found:** Normal validation finding (warning), exit 0
 
+## Changelog
+
+### v2.0.0 - Schema v2 Support (2026-04-15)
+
+**Breaking Changes:**
+- Only supports schema v2 (schema_version: 2)
+- Use v1.0.0 for legacy schema v1 files
+
+**New Features:**
+- Validates `github_project` (singular) via GraphQL
+- Validates `workstreams` with milestone objects (title, number, due, status)
+- Validates JIRA epic task `github_issue` references
+- Reports organized by workstream
+- Checks milestone numbers instead of string titles
+
+**Removed:**
+- Support for `repos:` array (replaced by `workstreams:`)
+- Support for milestone string validation (now uses milestone numbers)
+
+**Migration:**
+- All initiatives in eci-global/initiatives use schema v2
+- No migration needed for users (validator auto-detects schema version)
+
 ## Examples
 
 See `examples/` directory for:
