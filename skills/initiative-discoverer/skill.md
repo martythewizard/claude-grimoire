@@ -103,54 +103,71 @@ fi
 echo "Context extraction complete."
 ```
 
-### Step 2: Search JIRA for Candidate Epics
+### Step 2: Search GitHub Project for Untracked Issues (Optional)
 
-Build JQL query and fetch candidates:
+Query GitHub Project v2 for issues not tracked in YAML:
 
 ```bash
-# JIRA configuration
-JIRA_URL="${JIRA_URL:-https://jira.company.com}"
-JIRA_TOKEN="${JIRA_API_TOKEN}"
-
-# Build JQL query with smart filters
-JQL="project = $PROJECT_KEY AND type = Epic AND status != Closed"
-
-# Add team filter if team members provided
-if [ -n "$TEAM_MEMBERS" ]; then
-    # Convert comma-separated to JQL format
-    TEAM_JQL=$(echo "$TEAM_MEMBERS" | sed 's/,/ OR assignee = /g')
-    JQL="$JQL AND (assignee = $TEAM_JQL OR reporter = $TEAM_JQL)"
-fi
-
-echo "Searching JIRA with JQL: $JQL"
-
-# Execute search via JIRA API
-RESPONSE=$(curl -s -X POST \
-    -H "Authorization: Bearer $JIRA_TOKEN" \
-    -H "Content-Type: application/json" \
-    "$JIRA_URL/rest/api/3/search" \
-    -d "{
-        \"jql\": \"$JQL\",
-        \"fields\": [\"summary\", \"description\", \"assignee\", \"reporter\", \"created\"],
-        \"maxResults\": 50
-    }")
-
-# Check for errors
-if echo "$RESPONSE" | jq -e '.errorMessages' > /dev/null; then
-    echo "Error: JIRA API returned errors"
-    echo "$RESPONSE" | jq -r '.errorMessages[]'
-    exit 1
-fi
-
-# Extract candidate epics
-CANDIDATES=$(echo "$RESPONSE" | jq -r '.issues[] | "\(.key)|\(.fields.summary)|\(.fields.description // "")|\(.fields.assignee.name // "unassigned")|\(.fields.reporter.name)|\(.fields.created)"')
-
-CANDIDATE_COUNT=$(echo "$CANDIDATES" | wc -l)
-echo "Found $CANDIDATE_COUNT candidate epics"
-
-if [ "$CANDIDATE_COUNT" -eq 0 ]; then
-    echo "No untracked epics found. Initiative appears to be fully tracked!"
-    exit 0
+# Check if GitHub Project is configured
+if [ -n "$PROJECT_ORG" ] && [ -n "$PROJECT_NUMBER" ]; then
+    echo "Searching GitHub Project $PROJECT_ORG#$PROJECT_NUMBER..."
+    
+    # GraphQL query for project items
+    QUERY='query($org: String!, $number: Int!) {
+      organization(login: $org) {
+        projectV2(number: $number) {
+          items(first: 100) {
+            nodes {
+              content {
+                ... on Issue {
+                  number
+                  title
+                  state
+                  repository {
+                    nameWithOwner
+                  }
+                  milestone {
+                    title
+                    number
+                  }
+                  labels(first: 10) {
+                    nodes {
+                      name
+                    }
+                  }
+                  assignees(first: 5) {
+                    nodes {
+                      login
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }'
+    
+    RESPONSE=$(gh api graphql -f query="$QUERY" -f org="$PROJECT_ORG" -F number="$PROJECT_NUMBER" 2>&1)
+    GH_EXIT_CODE=$?
+    
+    if [ $GH_EXIT_CODE -ne 0 ]; then
+        echo "Warning: GitHub API failed, skipping GitHub Project search"
+        PROJECT_CANDIDATES=""
+    else
+        # Extract issues from project (pipe-delimited format)
+        PROJECT_CANDIDATES=$(echo "$RESPONSE" | jq -r '
+          .data.organization.projectV2.items.nodes[].content |
+          select(.number != null) |
+          "\(.number)|\(.title)|\(.repository.nameWithOwner)|\(.milestone.title // "none")|\(.assignees.nodes[0].login // "unassigned")|\(.labels.nodes | map(.name) | join(","))"
+        ')
+        
+        PROJECT_COUNT=$(echo "$PROJECT_CANDIDATES" | grep -c "^" || echo "0")
+        echo "Found $PROJECT_COUNT issues in GitHub Project"
+    fi
+else
+    echo "GitHub Project not configured, skipping project search"
+    PROJECT_CANDIDATES=""
 fi
 ```
 
