@@ -24,7 +24,7 @@ Invoke this skill after creating an initiative YAML, or periodically to find wor
 
 1. **Extract Context** - Parse schema v2 YAML for github_project, workstreams, JIRA epic tasks
 2. **Search GitHub Project** - Query project items via GraphQL (if configured)
-3. **Search Workstream Repos** - Find open issues in repos with milestone filters
+3. **Search Workstream Repos** - Find open issues in workstream repos
 4. **Deduplicate** - Remove issues already tracked in JIRA epic tasks
 5. **AI Ranking** - Score each candidate (1-10) using Claude for relevance
 6. **Generate Suggestions** - Output YAML snippets in schema v2 format
@@ -175,7 +175,49 @@ else
 fi
 ```
 
-### Step 3: Deduplicate Against Existing Epics
+### Step 3: Search Workstream Repos for Untracked Issues
+
+For each workstream repo, find open issues:
+
+```bash
+echo "Searching workstream repos for untracked issues..."
+
+REPO_CANDIDATES=""
+
+for repo in $WORKSTREAM_REPOS; do
+    echo "Searching $repo..."
+    
+    # Fetch open issues in repo
+    ISSUES=$(gh api repos/$repo/issues --jq '.[] | select(.state=="open") | "\(.number)|\(.title)|\(.milestone.title // "none")|\(.assignee.login // "unassigned")|\(.labels | map(.name) | join(","))"' 2>&1)
+    GH_EXIT_CODE=$?
+    
+    if [ $GH_EXIT_CODE -ne 0 ]; then
+        echo "Warning: Failed to fetch issues from $repo, skipping"
+        continue
+    fi
+    
+    if [ -z "$ISSUES" ]; then
+        echo "No open issues in $repo"
+        continue
+    fi
+    
+    # Add repo to each issue line
+    while IFS= read -r issue_line; do
+        [ -z "$issue_line" ] && continue
+        REPO_CANDIDATES="$REPO_CANDIDATES"$'\n'"$issue_line|$repo"
+    done <<< "$ISSUES"
+    
+    ISSUE_COUNT=$(echo "$ISSUES" | grep -c "^" || echo "0")
+    echo "Found $ISSUE_COUNT open issues in $repo"
+done
+
+# Remove leading newline
+REPO_CANDIDATES=$(echo "$REPO_CANDIDATES" | sed '/^$/d')
+REPO_COUNT=$(echo "$REPO_CANDIDATES" | grep -c "^" || echo "0")
+echo "Total: $REPO_COUNT open issues across workstream repos"
+```
+
+### Step 4: Deduplicate Against Existing Epics
 
 Filter out already-tracked epics:
 
@@ -207,7 +249,7 @@ if [ "$UNTRACKED_COUNT" -eq 0 ]; then
 fi
 ```
 
-### Step 4: Rank Candidates with AI
+### Step 5: Rank Candidates with AI
 
 Use Claude to score each candidate:
 
@@ -334,7 +376,7 @@ heuristic_score() {
 }
 ```
 
-### Step 5: Generate Suggestions
+### Step 6: Generate Suggestions
 
 Output markdown with YAML snippets:
 
