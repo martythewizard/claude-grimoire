@@ -283,40 +283,48 @@ else
 fi
 ```
 
-### Step 5: Validate Confluence Page
+### Step 5: Validate Confluence Page (Optional)
 
-Check if Confluence page exists:
+Check if Confluence page exists (skips if confluence section not configured):
 
 ```bash
-# Extract Confluence config
-CONFLUENCE_URL="${CONFLUENCE_URL:-https://confluence.company.com}"
-CONFLUENCE_TOKEN="${CONFLUENCE_API_TOKEN}"
-
-# Extract page ID from YAML
-PAGE_ID=$(grep "page_id:" "$YAML_FILE" | awk '{print $2}' | tr -d '"')
-
-CONFLUENCE_FINDINGS=()
-
-if [ -n "$PAGE_ID" ]; then
-    # Validate page ID is numeric
-    if ! [[ "$PAGE_ID" =~ ^[0-9]+$ ]]; then
-        CONFLUENCE_FINDINGS+=("Critical: Page ID must be numeric, got: $PAGE_ID")
-    else
-        # Check if page exists
-        STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer $CONFLUENCE_TOKEN" \
-            "$CONFLUENCE_URL/rest/api/content/$PAGE_ID")
-        
-        if [ "$STATUS_CODE" -eq 200 ]; then
-            echo "✅ Confluence page found: $PAGE_ID"
-        elif [ "$STATUS_CODE" -eq 404 ]; then
-            CONFLUENCE_FINDINGS+=("Warning: Confluence page not found: $PAGE_ID")
-        elif [ "$STATUS_CODE" -eq 401 ]; then
-            CONFLUENCE_FINDINGS+=("Warning: Confluence authentication failed")
+# Check if confluence section exists
+if grep -q "^confluence:" "$YAML_FILE" && grep -q "  page_id:" "$YAML_FILE"; then
+    echo "Validating Confluence Page..."
+    
+    # Extract Confluence config
+    CONFLUENCE_URL="${CONFLUENCE_URL:-https://confluence.company.com}"
+    CONFLUENCE_TOKEN="${CONFLUENCE_API_TOKEN}"
+    
+    # Extract page ID from YAML
+    PAGE_ID=$(grep "page_id:" "$YAML_FILE" | awk '{print $2}' | tr -d '"')
+    
+    CONFLUENCE_FINDINGS=()
+    
+    if [ -n "$PAGE_ID" ]; then
+        # Validate page ID is numeric
+        if ! [[ "$PAGE_ID" =~ ^[0-9]+$ ]]; then
+            CONFLUENCE_FINDINGS+=("Critical: Page ID must be numeric, got: $PAGE_ID")
         else
-            CONFLUENCE_FINDINGS+=("Warning: Unable to verify Confluence page (HTTP $STATUS_CODE)")
+            # Check if page exists
+            STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+                -H "Authorization: Bearer $CONFLUENCE_TOKEN" \
+                "$CONFLUENCE_URL/rest/api/content/$PAGE_ID")
+            
+            if [ "$STATUS_CODE" -eq 200 ]; then
+                echo "✅ Confluence page found: $PAGE_ID"
+            elif [ "$STATUS_CODE" -eq 404 ]; then
+                CONFLUENCE_FINDINGS+=("Warning: Confluence page not found: $PAGE_ID")
+            elif [ "$STATUS_CODE" -eq 401 ]; then
+                CONFLUENCE_FINDINGS+=("Warning: Confluence authentication failed")
+            else
+                CONFLUENCE_FINDINGS+=("Warning: Unable to verify Confluence page (HTTP $STATUS_CODE)")
+            fi
         fi
     fi
+else
+    echo "ℹ️  Confluence: Not configured (skipped)"
+    CONFLUENCE_FINDINGS=()
 fi
 ```
 
