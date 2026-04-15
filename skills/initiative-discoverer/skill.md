@@ -370,69 +370,127 @@ echo "Ranking complete."
 
 ### Step 6: Generate Suggestions
 
-Output markdown with YAML snippets:
+Output suggestions in schema v2 YAML format:
 
 ```bash
+echo ""
 echo "# Discovery Results: $(basename $YAML_FILE)"
 echo ""
-echo "Found $(echo "$RANKED_CANDIDATES" | grep -c '^') untracked epics that may belong to this initiative:"
+
+if [ -n "$PROJECT_ORG" ] && [ -n "$PROJECT_NUMBER" ]; then
+    echo "Initiative has GitHub Project $PROJECT_ORG#$PROJECT_NUMBER. Found $UNTRACKED_COUNT untracked issues."
+else
+    echo "Found $UNTRACKED_COUNT untracked issues across workstream repos."
+fi
+
 echo ""
 
 # High confidence (8-10)
 echo "## High Confidence (8-10)"
 echo ""
-HIGH_CONFIDENCE=$(echo "$RANKED_CANDIDATES" | awk -F'|' '$1 >= 8')
-if [ -z "$HIGH_CONFIDENCE" ]; then
-    echo "None"
-else
-    while IFS='|' read -r score key summary reasoning milestone assignee; do
-        echo "### $key: $summary"
+
+HIGH_FOUND=false
+while IFS='|' read -r score issue_num issue_title issue_repo issue_milestone issue_assignee issue_labels reasoning; do
+    [ -z "$score" ] && continue
+    if [ "$score" -ge 8 ]; then
+        HIGH_FOUND=true
+        echo "### #$issue_num: $issue_title"
+        echo "**Repo:** $issue_repo"
+        echo "**Milestone:** $issue_milestone"
         echo "**Score:** $score/10"
         echo "**Reasoning:** $reasoning"
-        echo "**Suggested milestone:** $milestone"
         echo ""
         echo "**Add to YAML:**"
         echo '```yaml'
-        echo "  - key: $key"
-        if [ "$milestone" != "unassigned" ]; then
-            echo "    milestone: \"$milestone\""
-        else
-            echo "    # milestone: TBD - review and assign appropriate milestone"
-        fi
+        echo "jira:"
+        echo "  epics:"
+        echo "    - key: <EPIC-KEY>  # Choose appropriate epic"
+        echo "      milestone: \"$issue_milestone\""
+        echo "      tasks:"
+        echo "        - key: <TASK-KEY>  # Create this JIRA task"
+        echo "          github_issue: $issue_num"
+        echo "          status: Backlog"
         echo '```'
         echo ""
-    done <<< "$HIGH_CONFIDENCE"
+    fi
+done <<< "$SCORED_CANDIDATES"
+
+if [ "$HIGH_FOUND" = false ]; then
+    echo "None"
+    echo ""
 fi
-echo ""
 
 # Medium confidence (5-7)
 echo "## Medium Confidence (5-7)"
 echo ""
-MEDIUM_CONFIDENCE=$(echo "$RANKED_CANDIDATES" | awk -F'|' '$1 >= 5 && $1 < 8')
-if [ -z "$MEDIUM_CONFIDENCE" ]; then
-    echo "None"
-else
-    while IFS='|' read -r score key summary reasoning milestone assignee; do
-        echo "### $key: $summary"
+
+MEDIUM_FOUND=false
+while IFS='|' read -r score issue_num issue_title issue_repo issue_milestone issue_assignee issue_labels reasoning; do
+    [ -z "$score" ] && continue
+    if [ "$score" -ge 5 ] && [ "$score" -lt 8 ]; then
+        MEDIUM_FOUND=true
+        echo "### #$issue_num: $issue_title"
+        echo "**Repo:** $issue_repo"
+        echo "**Milestone:** $issue_milestone"
         echo "**Score:** $score/10"
         echo "**Reasoning:** $reasoning"
-        echo "**Suggested milestone:** $milestone"
         echo ""
-        echo "**Add to YAML:**"
-        echo '```yaml'
-        echo "  - key: $key"
-        echo "    # milestone: TBD - review and assign appropriate milestone"
-        echo '```'
+        echo "**Suggested action:**"
+        echo "1. Review issue to confirm relevance"
+        if [ "$issue_milestone" = "none" ]; then
+            echo "2. Assign to appropriate milestone"
+        fi
+        if [ -n "$PROJECT_ORG" ]; then
+            echo "3. Add to GitHub Project $PROJECT_ORG#$PROJECT_NUMBER if relevant"
+        fi
+        echo "4. Create JIRA task and add github_issue reference"
         echo ""
-    done <<< "$MEDIUM_CONFIDENCE"
+    fi
+done <<< "$SCORED_CANDIDATES"
+
+if [ "$MEDIUM_FOUND" = false ]; then
+    echo "None"
+    echo ""
+fi
+
+echo "---"
+echo ""
+
+# Already tracked summary
+echo "## Already Tracked"
+echo ""
+TRACKED_COUNT=$(echo "$EXISTING_ISSUES" | tr ',' '\n' | grep -c "^" || echo "0")
+echo "- $TRACKED_COUNT issues tracked in JIRA epic tasks"
+if [ -n "$PROJECT_ORG" ]; then
+    echo "- GitHub Project $PROJECT_ORG#$PROJECT_NUMBER configured"
 fi
 echo ""
 
+# Optional JIRA discovery
+if [ -n "$PROJECT_KEY" ]; then
+    echo "## JIRA Discovery (Optional)"
+    echo ""
+    echo "JIRA project $PROJECT_KEY is configured. To search for untracked JIRA epics:"
+    echo "1. Run JIRA epic discovery separately (out of scope for schema v2)"
+    echo "2. Or continue using GitHub-first workflow"
+    echo ""
+else
+    echo "## JIRA Discovery (Optional)"
+    echo ""
+    echo "JIRA not configured. To enable JIRA tracking, add:"
+    echo '```yaml'
+    echo "jira:"
+    echo "  project_key: YOUR_PROJECT"
+    echo '```'
+    echo ""
+fi
+
 # Action items
 echo "## Action Items"
-echo "1. Review high-confidence suggestions and add to YAML"
-echo "2. Verify medium-confidence suggestions with initiative owner"
-echo "3. Re-run /initiative-validator after updating YAML"
+echo "1. Review high-confidence GitHub issue suggestions"
+echo "2. Create corresponding JIRA tasks if tracking there"
+echo "3. Add github_issue references to JIRA epic tasks in YAML"
+echo "4. Re-run /initiative-validator after updating YAML"
 ```
 
 ## Configuration
