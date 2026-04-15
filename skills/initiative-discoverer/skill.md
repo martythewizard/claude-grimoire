@@ -6,15 +6,15 @@ version: 2.0.0
 
 # Initiative Discoverer Skill
 
-Find existing JIRA epics/issues that belong to an initiative but aren't tracked in the YAML yet. Uses AI-driven semantic matching to score candidates by relevance.
+Discover GitHub issues in Projects and workstream repos that should be linked to initiatives. Uses AI-driven semantic matching to score candidates by relevance.
 
 ## Purpose
 
 This skill helps you:
-- Discover orphaned JIRA work that should be linked to initiatives
-- Find epics created by team members that aren't tracked yet
-- Increase initiative completeness with AI-powered suggestions
-- Get ready-to-merge YAML snippets with confidence scores
+- Discover GitHub issues in Projects that aren't tracked in initiative YAML
+- Find issues in workstream repos that should be linked to JIRA epic tasks
+- Increase initiative completeness with AI-powered relevance scoring
+- Get ready-to-merge YAML snippets with confidence scores and reasoning
 
 ## When to Use
 
@@ -22,11 +22,12 @@ Invoke this skill after creating an initiative YAML, or periodically to find wor
 
 ## How It Works
 
-1. **Extract Context** - Parse YAML for description keywords, team, repos, project key
-2. **Search JIRA** - Build JQL query with smart filters (team, project, status)
-3. **Deduplicate** - Remove epics already tracked in YAML
-4. **AI Ranking** - Score each candidate (1-10) using Claude for relevance
-5. **Generate Suggestions** - Output YAML snippets with reasoning
+1. **Extract Context** - Parse schema v2 YAML for github_project, workstreams, JIRA epic tasks
+2. **Search GitHub Project** - Query project items via GraphQL (if configured)
+3. **Search Workstream Repos** - Find open issues in repos with milestone filters
+4. **Deduplicate** - Remove issues already tracked in JIRA epic tasks
+5. **AI Ranking** - Score each candidate (1-10) using Claude for relevance
+6. **Generate Suggestions** - Output YAML snippets in schema v2 format
 
 ## Workflow
 
