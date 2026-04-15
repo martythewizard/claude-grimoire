@@ -49,9 +49,11 @@ if [ ! -f "$YAML_FILE" ]; then
     exit 1
 fi
 
-# Validate schema_version exists
-if ! grep -q "^schema_version:" "$YAML_FILE"; then
-    echo "Critical: Missing required field 'schema_version'"
+# Validate schema_version is 2
+SCHEMA_VERSION=$(grep "^schema_version:" "$YAML_FILE" | awk '{print $2}')
+if [ "$SCHEMA_VERSION" != "2" ]; then
+    echo "Critical: Expected schema_version: 2, got: $SCHEMA_VERSION"
+    echo "This skill only supports schema v2. Please use initiative-validator v1.0.0 for older schemas."
     exit 1
 fi
 
@@ -72,7 +74,7 @@ if [[ ! " ${VALID_STATUSES[*]} " =~ " ${STATUS} " ]]; then
     exit 1
 fi
 
-echo "✅ Schema validation passed"
+echo "✅ Schema v2 validation passed"
 ```
 
 ### Step 2: Validate GitHub Milestones
