@@ -75,6 +75,11 @@ if [[ ! " ${VALID_STATUSES[*]} " =~ " ${STATUS} " ]]; then
 fi
 
 echo "✅ Schema v2 validation passed"
+
+# Initialize findings arrays
+GITHUB_FINDINGS=()
+JIRA_FINDINGS=()
+CONFLUENCE_FINDINGS=()
 ```
 
 ### Step 2: Validate GitHub Project (Optional)
@@ -338,8 +343,8 @@ INITIATIVE_NAME=$(grep "^name:" "$YAML_FILE" | sed 's/name: "\?\([^"]*\)"\?/\1/'
 # Count validations
 GITHUB_PROJECT_CONFIGURED=$(grep -q "^github_project:" "$YAML_FILE" && echo "true" || echo "false")
 WORKSTREAMS_CONFIGURED=$(grep -q "^workstreams:" "$YAML_FILE" && echo "true" || echo "false")
-JIRA_CONFIGURED=$(grep -q "^jira:" "$YAML_FILE" && echo "true" || echo "false")
-CONFLUENCE_CONFIGURED=$(grep -q "^confluence:" "$YAML_FILE" && echo "true" || echo "false")
+JIRA_CONFIGURED=$(grep -q "^jira:" "$YAML_FILE" && grep -q "  project_key:" "$YAML_FILE" && echo "true" || echo "false")
+CONFLUENCE_CONFIGURED=$(grep -q "^confluence:" "$YAML_FILE" && grep -q "  page_id:" "$YAML_FILE" && echo "true" || echo "false")
 
 echo "# Validation Report: $(basename $YAML_FILE)"
 echo ""
@@ -349,7 +354,7 @@ echo "- ✅ Schema v2: Valid"
 # GitHub Project summary
 if [ "$GITHUB_PROJECT_CONFIGURED" = "true" ]; then
     PROJECT_ISSUES=$(echo "${GITHUB_FINDINGS[@]}" | grep -c "Project" || echo "0")
-    if [ "$PROJECT_ISSUES" -eq 0 ]; then
+    if [ "$PROJECT_ISSUES" -eq 0 ] && [ -n "$PROJECT_ORG" ]; then
         echo "- ✅ GitHub Project: Found ($PROJECT_ORG#$PROJECT_NUMBER)"
     else
         echo "- ⚠️ GitHub Project: Issues found"
@@ -381,7 +386,7 @@ if [ "$JIRA_CONFIGURED" = "true" ]; then
         echo "- ⚠️ JIRA Epic Tasks: $JIRA_ISSUE_COUNT issues found"
     fi
 else
-    echo "- ⚠️ JIRA: Not configured (skipped)"
+    echo "- ℹ️  JIRA: Not configured (skipped)"
 fi
 
 # Confluence summary
@@ -393,7 +398,7 @@ if [ "$CONFLUENCE_CONFIGURED" = "true" ]; then
         echo "- ⚠️ Confluence: ${#CONFLUENCE_FINDINGS[@]} issues"
     fi
 else
-    echo "- ⚠️ Confluence: Not configured (skipped)"
+    echo "- ℹ️  Confluence: Not configured (skipped)"
 fi
 echo ""
 
