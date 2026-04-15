@@ -1,17 +1,29 @@
-# Discovery Results: firehydrant.yaml
+# Discovery Results: 2026-q1-coralogix-quota-manager.yaml
 
-No untracked epics found. Initiative appears to be fully tracked!
+Initiative has GitHub Project eci-global#8. Found 0 untracked issues.
 
-## Summary
-- **JIRA Project:** ITPLAT01
-- **Candidates Searched:** 47 epics
-- **Already Tracked:** 8 epics
-- **After Deduplication:** 0 untracked epics
+## High Confidence (8-10)
 
-## Status
-✅ All epics in project ITPLAT01 assigned to team members are already tracked in this initiative YAML.
+None
 
-## Next Steps
-- Continue monitoring for new epics created by team members
-- Re-run discoverer periodically to catch new work
-- Consider running /initiative-validator to verify tracked epics still exist
+## Medium Confidence (5-7)
+
+None
+
+---
+
+## Already Tracked
+
+- 8 issues tracked in JIRA epic tasks
+- GitHub Project eci-global#8 configured
+
+All open issues in GitHub Project and workstream repos are already tracked in JIRA epic tasks. Initiative appears to be fully tracked!
+
+## JIRA Discovery (Optional)
+
+JIRA project ITPLAT01 is configured. To search for untracked JIRA epics:
+1. Run JIRA epic discovery separately (out of scope for schema v2)
+2. Or continue using GitHub-first workflow
+
+## Action Items
+No action needed. All GitHub issues are tracked.
