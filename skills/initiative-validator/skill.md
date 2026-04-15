@@ -330,63 +330,197 @@ fi
 
 ### Step 6: Generate Report
 
-Aggregate findings and output markdown:
+Aggregate findings and output markdown with workstream-organized format:
 
 ```bash
-INITIATIVE_NAME=$(grep "^name:" "$YAML_FILE" | sed 's/name: "\(.*\)"/\1/')
+INITIATIVE_NAME=$(grep "^name:" "$YAML_FILE" | sed 's/name: "\?\([^"]*\)"\?/\1/')
+
+# Count validations
+GITHUB_PROJECT_CONFIGURED=$(grep -q "^github_project:" "$YAML_FILE" && echo "true" || echo "false")
+WORKSTREAMS_CONFIGURED=$(grep -q "^workstreams:" "$YAML_FILE" && echo "true" || echo "false")
+JIRA_CONFIGURED=$(grep -q "^jira:" "$YAML_FILE" && echo "true" || echo "false")
+CONFLUENCE_CONFIGURED=$(grep -q "^confluence:" "$YAML_FILE" && echo "true" || echo "false")
 
 echo "# Validation Report: $(basename $YAML_FILE)"
 echo ""
 echo "## Summary"
-echo "- ✅ Schema: Valid"
-echo "- GitHub: ${#GITHUB_FINDINGS[@]} issues"
-echo "- JIRA: ${#JIRA_FINDINGS[@]} issues"
-echo "- Confluence: ${#CONFLUENCE_FINDINGS[@]} issues"
+echo "- ✅ Schema v2: Valid"
+
+# GitHub Project summary
+if [ "$GITHUB_PROJECT_CONFIGURED" = "true" ]; then
+    PROJECT_ISSUES=$(echo "${GITHUB_FINDINGS[@]}" | grep -c "Project" || echo "0")
+    if [ "$PROJECT_ISSUES" -eq 0 ]; then
+        echo "- ✅ GitHub Project: Found ($PROJECT_ORG#$PROJECT_NUMBER)"
+    else
+        echo "- ⚠️ GitHub Project: Issues found"
+    fi
+else
+    echo "- ℹ️  GitHub Project: Not configured (skipped)"
+fi
+
+# Workstreams summary
+if [ "$WORKSTREAMS_CONFIGURED" = "true" ]; then
+    WS_ISSUES=$(echo "${GITHUB_FINDINGS[@]}" | grep -c "Workstream\|Milestone" || echo "0")
+    if [ "$WS_ISSUES" -eq 0 ]; then
+        echo "- ✅ Workstreams: $WORKSTREAM_COUNT validated"
+        echo "- ✅ Milestones: $MILESTONE_COUNT found in repos"
+    else
+        echo "- ⚠️ Workstreams: $WORKSTREAM_COUNT validated with issues"
+        echo "- ⚠️ Milestones: Issues found"
+    fi
+else
+    echo "- ℹ️  Workstreams: Not configured (skipped)"
+fi
+
+# JIRA summary
+if [ "$JIRA_CONFIGURED" = "true" ]; then
+    JIRA_ISSUE_COUNT=$(echo "${JIRA_FINDINGS[@]}" | grep -c "Warning\|Critical" || echo "0")
+    if [ "$JIRA_ISSUE_COUNT" -eq 0 ]; then
+        echo "- ✅ JIRA Epic Tasks: $JIRA_TASK_COUNT validated"
+    else
+        echo "- ⚠️ JIRA Epic Tasks: $JIRA_ISSUE_COUNT issues found"
+    fi
+else
+    echo "- ⚠️ JIRA: Not configured (skipped)"
+fi
+
+# Confluence summary
+if [ "$CONFLUENCE_CONFIGURED" = "true" ]; then
+    CONF_ISSUES=$(echo "${CONFLUENCE_FINDINGS[@]}" | wc -l)
+    if [ "$CONF_ISSUES" -eq 0 ]; then
+        echo "- ✅ Confluence: Page found"
+    else
+        echo "- ⚠️ Confluence: ${#CONFLUENCE_FINDINGS[@]} issues"
+    fi
+else
+    echo "- ⚠️ Confluence: Not configured (skipped)"
+fi
 echo ""
 
 # Critical Issues
 echo "## Critical Issues"
-if [ ${#CRITICAL_FINDINGS[@]} -eq 0 ]; then
-    echo "None"
-else
-    for finding in "${CRITICAL_FINDINGS[@]}"; do
+CRITICAL_FOUND=false
+for finding in "${GITHUB_FINDINGS[@]}"; do
+    if [[ "$finding" == Critical:* ]]; then
         echo "- $finding"
-    done
+        CRITICAL_FOUND=true
+    fi
+done
+for finding in "${JIRA_FINDINGS[@]}"; do
+    if [[ "$finding" == Critical:* ]]; then
+        echo "- $finding"
+        CRITICAL_FOUND=true
+    fi
+done
+for finding in "${CONFLUENCE_FINDINGS[@]}"; do
+    if [[ "$finding" == Critical:* ]]; then
+        echo "- $finding"
+        CRITICAL_FOUND=true
+    fi
+done
+if [ "$CRITICAL_FOUND" = false ]; then
+    echo "None"
 fi
 echo ""
 
 # Warnings
 echo "## Warnings"
-if [ ${#GITHUB_FINDINGS[@]} -eq 0 ] && [ ${#JIRA_FINDINGS[@]} -eq 0 ] && [ ${#CONFLUENCE_FINDINGS[@]} -eq 0 ]; then
+WARNINGS_FOUND=false
+for finding in "${GITHUB_FINDINGS[@]}"; do
+    if [[ "$finding" == Warning:* ]]; then
+        echo "- $finding"
+        WARNINGS_FOUND=true
+    fi
+done
+for finding in "${JIRA_FINDINGS[@]}"; do
+    if [[ "$finding" == Warning:* ]]; then
+        echo "- $finding"
+        WARNINGS_FOUND=true
+    fi
+done
+for finding in "${CONFLUENCE_FINDINGS[@]}"; do
+    if [[ "$finding" == Warning:* ]]; then
+        echo "- $finding"
+        WARNINGS_FOUND=true
+    fi
+done
+if [ "$WARNINGS_FOUND" = false ]; then
     echo "None"
-else
-    for finding in "${GITHUB_FINDINGS[@]}"; do
-        echo "- $finding"
-    done
-    for finding in "${JIRA_FINDINGS[@]}"; do
-        echo "- $finding"
-    done
-    for finding in "${CONFLUENCE_FINDINGS[@]}"; do
-        echo "- $finding"
-    done
 fi
 echo ""
 
 # Info
 echo "## Info"
-if ! grep -q "^tags:" "$YAML_FILE"; then
-    echo "- Consider adding \`tags:\` for better discoverability"
+INFO_FOUND=false
+for finding in "${GITHUB_FINDINGS[@]}"; do
+    if [[ "$finding" == Info:* ]]; then
+        echo "- $finding"
+        INFO_FOUND=true
+    fi
+done
+for finding in "${JIRA_FINDINGS[@]}"; do
+    if [[ "$finding" == Info:* ]]; then
+        echo "- $finding"
+        INFO_FOUND=true
+    fi
+done
+
+# Add suggestions for optional sections
+if [ "$GITHUB_PROJECT_CONFIGURED" = false ]; then
+    echo "- Consider adding \`github_project\` to track work in GitHub Projects"
+    INFO_FOUND=true
 fi
-if ! grep -q "^team:" "$YAML_FILE"; then
-    echo "- Consider adding \`team:\` to track all contributors"
+if [ "$WORKSTREAMS_CONFIGURED" = false ]; then
+    echo "- Consider adding \`workstreams\` to organize work by repo and milestone"
+    INFO_FOUND=true
+fi
+if [ "$JIRA_CONFIGURED" = false ]; then
+    echo "- JIRA validation skipped (no jira.project_key configured)"
+    INFO_FOUND=true
+fi
+if [ "$CONFLUENCE_CONFIGURED" = false ]; then
+    echo "- Confluence validation skipped (no confluence.page_id configured)"
+    INFO_FOUND=true
+fi
+
+if [ "$INFO_FOUND" = false ]; then
+    echo "None"
 fi
 echo ""
 
+# Workstream Details (if workstreams configured)
+if [ "$WORKSTREAMS_CONFIGURED" = "true" ]; then
+    echo "## Workstream Details"
+    echo ""
+    
+    # Print details for each workstream
+    while IFS= read -r ws_name; do
+        [ -z "$ws_name" ] && continue
+        WS_REPO=$(grep -A 1 "name: \"$ws_name\"" "$YAML_FILE" | grep "repo:" | awk '{print $2}')
+        echo "### $ws_name ($WS_REPO)"
+        
+        # List milestones for this workstream
+        grep -A 100 "name: \"$ws_name\"" "$YAML_FILE" | \
+            grep -A 50 "milestones:" | \
+            grep -B 1 "number:" | \
+            grep "title:" | \
+            sed 's/.*title: "\?\([^"]*\)"\?/\1/' | \
+            head -20 | \
+            while read ms_title; do
+                MS_NUMBER=$(grep -A 2 "title: \"$ms_title\"" "$YAML_FILE" | grep "number:" | awk '{print $2}' | head -1)
+                MS_DUE=$(grep -A 3 "title: \"$ms_title\"" "$YAML_FILE" | grep "due:" | awk '{print $2}' | tr -d '"' | head -1)
+                MS_STATUS=$(grep -A 4 "title: \"$ms_title\"" "$YAML_FILE" | grep "status:" | awk '{print $2}' | head -1)
+                echo "- ✅ $ms_title (milestone #$MS_NUMBER, due $MS_DUE, status: $MS_STATUS)"
+            done
+        echo ""
+    done <<< "$WORKSTREAM_NAMES"
+fi
+
 # Action Items
 echo "## Action Items for Initiative Owner"
-if [ ${#GITHUB_FINDINGS[@]} -gt 0 ] || [ ${#JIRA_FINDINGS[@]} -gt 0 ] || [ ${#CONFLUENCE_FINDINGS[@]} -gt 0 ]; then
-    echo "1. Review warnings above and verify referenced resources"
-    echo "2. Update YAML to remove stale references or confirm they are intentional"
+if [ "$WARNINGS_FOUND" = true ] || [ "$CRITICAL_FOUND" = true ]; then
+    echo "1. Review warnings and critical issues above"
+    echo "2. Verify referenced resources or update YAML"
     echo "3. Re-run validation after making changes"
 else
     echo "All validations passed! Initiative YAML is complete and accurate."
