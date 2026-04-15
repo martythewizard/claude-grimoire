@@ -208,7 +208,82 @@ else
 fi
 ```
 
-### Step 4: Validate Confluence Page
+### Step 4: Validate JIRA Epic Tasks (Optional)
+
+For each JIRA epic task, verify github_issue reference is valid:
+
+```bash
+# Check if jira section exists
+if grep -q "^jira:" "$YAML_FILE" && grep -q "  project_key:" "$YAML_FILE"; then
+    echo "Validating JIRA Epic Tasks..."
+    
+    # Extract JIRA URL from config
+    JIRA_URL="${JIRA_URL:-https://jira.company.com}"
+    JIRA_TOKEN="${JIRA_API_TOKEN}"
+    
+    JIRA_FINDINGS=()
+    JIRA_TASK_COUNT=0
+    
+    # Extract all epic keys to process
+    EPIC_KEYS=$(grep -A 200 "^jira:" "$YAML_FILE" | grep "  - key:" | awk '{print $3}')
+    
+    for epic_key in $EPIC_KEYS; do
+        # Validate epic key format (PROJECT-123)
+        if ! [[ "$epic_key" =~ ^[A-Z]+-[0-9]+$ ]]; then
+            JIRA_FINDINGS+=("Critical: Malformed epic key '$epic_key' (expected format: PROJECT-123)")
+            continue
+        fi
+        
+        # Check if epic exists (optional, can be slow)
+        # For now, assume epic exists and focus on tasks
+        
+        # Extract tasks for this epic
+        TASK_KEYS=$(grep -A 50 "key: $epic_key" "$YAML_FILE" | \
+                    grep -A 30 "tasks:" | \
+                    grep "  - key:" | \
+                    awk '{print $3}')
+        
+        for task_key in $TASK_KEYS; do
+            JIRA_TASK_COUNT=$((JIRA_TASK_COUNT + 1))
+            
+            # Extract github_issue number for this task
+            GITHUB_ISSUE=$(grep -A 2 "key: $task_key" "$YAML_FILE" | \
+                          grep "github_issue:" | \
+                          awk '{print $2}')
+            
+            if [ -z "$GITHUB_ISSUE" ]; then
+                JIRA_FINDINGS+=("Info: JIRA task $task_key has no github_issue reference")
+                continue
+            fi
+            
+            # Find which repo this issue should be in (from workstream context)
+            # For now, check all workstream repos
+            FOUND_ISSUE=false
+            WORKSTREAM_REPOS=$(grep -A 500 "^workstreams:" "$YAML_FILE" | grep "repo:" | awk '{print $2}' | sort -u)
+            
+            for ws_repo in $WORKSTREAM_REPOS; do
+                if gh api repos/$ws_repo/issues/$GITHUB_ISSUE --jq '.number' > /dev/null 2>&1; then
+                    echo "✅ JIRA task $task_key github_issue #$GITHUB_ISSUE found in $ws_repo"
+                    FOUND_ISSUE=true
+                    break
+                fi
+            done
+            
+            if [ "$FOUND_ISSUE" = false ]; then
+                JIRA_FINDINGS+=("Warning: JIRA task $task_key references github_issue #$GITHUB_ISSUE but issue not found in any workstream repo")
+            fi
+        done
+    done
+    
+    echo "Validated $JIRA_TASK_COUNT JIRA epic tasks"
+    
+else
+    echo "ℹ️  JIRA: Not configured (skipped)"
+    JIRA_FINDINGS=()
+fi
+```
+
+### Step 5: Validate Confluence Page
 
 Check if Confluence page exists:
 
@@ -245,7 +320,7 @@ if [ -n "$PAGE_ID" ]; then
 fi
 ```
 
-### Step 5: Generate Report
+### Step 6: Generate Report
 
 Aggregate findings and output markdown:
 
