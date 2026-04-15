@@ -1,7 +1,7 @@
 ---
 name: initiative-validator
 description: Validate initiative YAML files (schema v2) against GitHub Projects, workstreams, JIRA epic tasks, and Confluence
-version: 2.0.0
+version: 2.1.0
 ---
 
 # Initiative Validator Skill
@@ -333,21 +333,62 @@ if grep -q "^jira:" "$YAML_FILE" && grep -q "  project_key:" "$YAML_FILE"; then
                 continue
             fi
             
-            # Find which repo this issue should be in (from workstream context)
-            # For now, check all workstream repos
-            FOUND_ISSUE=false
-            WORKSTREAM_REPOS=$(grep -A 500 "^workstreams:" "$YAML_FILE" | grep "repo:" | awk '{print $2}' | sort -u)
+            # Extract milestone for epic
+            EPIC_MILESTONE=$(grep -B 10 "key: $task_key" "$YAML_FILE" | \
+                            grep "milestone:" | tail -1 | \
+                            sed 's/.*milestone: "\?\([^"]*\)"\?/\1/')
             
-            for ws_repo in $WORKSTREAM_REPOS; do
-                if gh api repos/$ws_repo/issues/$GITHUB_ISSUE --jq '.number' > /dev/null 2>&1; then
-                    echo "✅ JIRA task $task_key github_issue #$GITHUB_ISSUE found in $ws_repo"
-                    FOUND_ISSUE=true
-                    break
+            if [ -z "$EPIC_MILESTONE" ]; then
+                JIRA_FINDINGS+=("Warning: Task $task_key has no milestone context, cannot infer repo")
+                continue
+            fi
+            
+            # Resolve repo using inference function
+            RESOLVED_REPO=$(resolve_repo "$task_key" "$EPIC_MILESTONE" "$YAML_FILE")
+            
+            if [ -z "$RESOLVED_REPO" ]; then
+                echo "⚠️  JIRA task $task_key github_issue #$GITHUB_ISSUE: repo unknown"
+                continue
+            fi
+            
+            # Validate issue exists in resolved repo
+            if gh api repos/$RESOLVED_REPO/issues/$GITHUB_ISSUE --jq '.title' > /dev/null 2>&1; then
+                ISSUE_TITLE=$(gh api repos/$RESOLVED_REPO/issues/$GITHUB_ISSUE --jq '.title')
+                echo "✅ JIRA task $task_key github_issue #$GITHUB_ISSUE ($RESOLVED_REPO): $ISSUE_TITLE"
+            else
+                echo "❌ JIRA task $task_key github_issue #$GITHUB_ISSUE ($RESOLVED_REPO): NOT FOUND"
+                JIRA_FINDINGS+=("Critical: JIRA task $task_key references github_issue #$GITHUB_ISSUE in $RESOLVED_REPO but issue not found")
+            fi
+            
+            # Check for cross-repo mismatch (explicit repo ≠ milestone's workstream repo)
+            EXPLICIT_REPO=$(grep -A 3 "key: $task_key" "$YAML_FILE" | grep "repo:" | awk '{print $2}')
+            
+            if [ -n "$EXPLICIT_REPO" ]; then
+                # Find milestone's workstream repo for comparison
+                MILESTONE_WS_REPO=""
+                local current_ws_repo=""
+                local in_ws_milestones=false
+                
+                while IFS= read -r line; do
+                    if echo "$line" | grep -q "^  - name:"; then
+                        current_ws_repo=""
+                        in_ws_milestones=false
+                    elif echo "$line" | grep -q "    repo:"; then
+                        current_ws_repo=$(echo "$line" | awk '{print $2}')
+                    elif echo "$line" | grep -q "    milestones:"; then
+                        in_ws_milestones=true
+                    elif echo "$line" | grep -q "      - title:" && [ "$in_ws_milestones" = true ]; then
+                        local ms=$(echo "$line" | sed 's/.*title: "\?\([^"]*\)"\?/\1/')
+                        if [ "$ms" = "$EPIC_MILESTONE" ]; then
+                            MILESTONE_WS_REPO="$current_ws_repo"
+                            break
+                        fi
+                    fi
+                done < <(grep -A 500 "^workstreams:" "$YAML_FILE")
+                
+                if [ -n "$MILESTONE_WS_REPO" ] && [ "$EXPLICIT_REPO" != "$MILESTONE_WS_REPO" ]; then
+                    JIRA_FINDINGS+=("Warning: Task $task_key uses explicit repo '$EXPLICIT_REPO' but milestone '$EPIC_MILESTONE' is in workstream with repo '$MILESTONE_WS_REPO'. Verify this is intentional.")
                 fi
-            done
-            
-            if [ "$FOUND_ISSUE" = false ]; then
-                JIRA_FINDINGS+=("Warning: JIRA task $task_key references github_issue #$GITHUB_ISSUE but issue not found in any workstream repo")
             fi
         done
     done
