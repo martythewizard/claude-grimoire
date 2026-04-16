@@ -20,37 +20,37 @@
   "skills": [
     {
       "name": "pr-author",
-      "path": "skills/pr-author/skill.md",
+      "path": "skills/pr-author/SKILL.md",
       "description": "Generate comprehensive PR descriptions with GitHub issue references"
     },
     {
       "name": "visual-prd",
-      "path": "skills/visual-prd/skill.md",
+      "path": "skills/visual-prd/SKILL.md",
       "description": "Create visual Product Requirements Documents with frontend-design"
     },
     {
       "name": "initiative-creator",
-      "path": "skills/initiative-creator/skill.md",
+      "path": "skills/initiative-creator/SKILL.md",
       "description": "Create well-structured GitHub initiatives with proper metadata"
     },
     {
       "name": "initiative-breakdown",
-      "path": "skills/initiative-breakdown/skill.md",
+      "path": "skills/initiative-breakdown/SKILL.md",
       "description": "Break GitHub initiatives into actionable tasks"
     },
     {
       "name": "incident-handler",
-      "path": "skills/incident-handler/skill.md",
+      "path": "skills/incident-handler/SKILL.md",
       "description": "End-to-end incident response workflow"
     },
     {
       "name": "initiative-validator",
-      "path": "skills/initiative-validator/skill.md",
+      "path": "skills/initiative-validator/SKILL.md",
       "description": "Validate initiative YAML files against GitHub, JIRA, and Confluence"
     },
     {
       "name": "initiative-discoverer",
-      "path": "skills/initiative-discoverer/skill.md",
+      "path": "skills/initiative-discoverer/SKILL.md",
       "description": "Find existing JIRA epics that should be tracked in an initiative using AI-driven matching"
     }
   ],

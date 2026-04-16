@@ -1,7 +1,7 @@
 ---
 name: pr-autopilot-team
-description: Fully automated PR creation after code review passes - handles git operations and PR submission
-version: 1.0.0
+description: Fully automated PR creation and merging - handles git operations, PR submission, and auto-merge when approved
+version: 2.0.0
 author: claude-grimoire
 team_type: automation
 requires:
@@ -15,11 +15,11 @@ optional:
 
 # PR Autopilot Team
 
-Fully automated pull request creation team that handles the complete PR workflow after code has been reviewed and approved. Automates git operations, PR description generation, and PR submission with proper labels and reviewers.
+Fully automated pull request creation and merging team that handles the complete PR workflow from creation to merge. Automates git operations, PR description generation, PR submission with metadata, and auto-merge when all approval criteria are met.
 
 ## Purpose
 
-Automate the final steps of feature delivery:
+Automate the complete PR workflow:
 - Verify code has passed review
 - Run final test suite
 - Generate comprehensive PR description
@@ -27,6 +27,7 @@ Automate the final steps of feature delivery:
 - Push branch to remote
 - Create GitHub PR with metadata
 - Apply labels and assign reviewers
+- Monitor and auto-merge when approved
 
 ## When to Use
 
@@ -416,11 +417,13 @@ Automate the final steps of feature delivery:
    ```
    Show report
    
-   Additional options:
-   "Would you like me to:
-   A) Monitor CI/CD status and notify on failure
-   B) Open PR in browser
-   C) Nothing, I'm done here"
+   Would you like me to:
+   A) Check and merge when approved (/check-and-merge)
+   B) Monitor CI/CD status and notify on failure
+   C) Open PR in browser
+   D) Nothing, I'm done here
+   
+   If user chooses A: Proceed to Phase 7
    ```
 
 **Output:** User informed of PR status
@@ -438,7 +441,16 @@ The team respects configuration from `.claude-grimoire/config.json`:
     "setAsDraft": false,
     "runTests": true,
     "requireReview": true,
-    "defaultLabels": ["needs-review", "automated"]
+    "defaultLabels": ["needs-review", "automated"],
+    "autoMerge": {
+      "enabled": true,
+      "deleteBranchAfterMerge": true,
+      "requireAllConversationsResolved": true,
+      "minApprovals": 1,
+      "respectBranchProtection": true,
+      "defaultMergeMethod": null,
+      "autoCheckDeployment": false
+    }
   },
   "github": {
     "defaultReviewers": ["team-lead", "senior-dev"],
@@ -447,172 +459,394 @@ The team respects configuration from `.claude-grimoire/config.json`:
 }
 ```
 
+**Auto-Merge Configuration:**
+
+- `enabled` - Enable/disable Phase 7 functionality (default: true)
+- `deleteBranchAfterMerge` - Prompt to delete branch after successful merge (default: true)
+- `requireAllConversationsResolved` - Block merge if review threads unresolved (default: true)
+- `minApprovals` - Minimum approvals required (overridden by branch protection) (default: 1)
+- `respectBranchProtection` - Honor GitHub branch protection rules (default: true)
+- `defaultMergeMethod` - Override repo default: "squash", "merge", "rebase", or null for auto-detect (default: null)
+- `autoCheckDeployment` - Query deployment status after merge (default: false)
+
 ## Usage Examples
 
-### Example 1: Simple Feature - Clean Path
-
-**Context:**
-- Feature branch: `feature/add-dark-mode`
-- Issue: #42 (Add dark mode toggle)
-- Code reviewed: ✅ staff-engineer approved
-- Tests: ✅ Passing
-
-**Team workflow:**
-
-```
-User: "Create PR for dark mode feature"
-
-Team: [Phase 1] Pre-flight verification
-  ✅ On feature branch
-  ✅ No uncommitted changes
-  ✅ Tests passing
-  ✅ Code reviewed
-
-Team: [Phase 2] Context gathering
-  Found commits: 3 commits on feature/add-dark-mode
-  Found issues: #42 (Add dark mode toggle)
-  Fetched issue context via github-context-agent
-
-Team: [Phase 3] PR description
-  Invoked pr-author
-  Generated description with:
-  - Summary: Add dark mode toggle to settings
-  - Closes: #42
-  - Changes: Added ThemeToggle component, persistence logic
-  - Test plan: ✓ Toggle switches themes, ✓ Preference persisted
-
-Team: [Phase 4] Git operations
-  ✅ All changes staged
-  ✅ Commit created
-  ✅ Pushed to origin/feature/add-dark-mode
-
-Team: [Phase 5] PR creation
-  ✅ Created PR #55
-  ✅ Applied labels: needs-review, enhancement
-  ✅ Assigned reviewers: @team-lead (from CODEOWNERS)
-  
-Team: [Phase 6] Report
-  ✅ PR #55 created successfully
-  URL: https://github.com/owner/repo/pull/55
-  Next: Wait for human review
-```
-
-**Result:** PR created in ~2 minutes, zero manual work
+See [examples.md](./references/examples.md) for detailed workflow examples including:
+- Example 1: Simple Feature - Clean Path
+- Example 2: Complex Feature - With Fixes
+- Example 3: Multiple Issues
 
 ---
 
-### Example 2: Complex Feature - With Fixes
+### Phase 7: Monitor and Auto-Merge
 
-**Context:**
-- Feature branch: `feature/multi-tenant`
-- Issue: #100 (Multi-tenant support)
-- Code reviewed: ⚠️  Minor issues found
-- Tests: ❌ Failing
+**Goal:** Check PR readiness and merge when all criteria are met
 
-**Team workflow:**
+**Trigger Options:**
+1. After Phase 6 completion - team asks user if they want to check and merge
+2. User runs `/check-and-merge` from any branch with a PR
+3. User runs `/check-and-merge #123` to check specific PR
 
-```
-User: "Create PR for multi-tenant support"
+**Process:**
 
-Team: [Phase 1] Pre-flight verification
-  ✅ On feature branch
-  ✅ No uncommitted changes
-  ⚠️  Tests failing (2 tests)
+#### 1. Verify PR Exists
+
+```bash
+# Get PR for current branch
+pr_number=$(gh pr view --json number -q .number 2>/dev/null)
+
+if [ -z "$pr_number" ]; then
+  Error: "No PR found for current branch"
   
-  → Halt: Cannot create PR with failing tests
-  Options: 
-  A) Fix tests with staff-developer
-  B) User will fix
-  C) Skip tests (not recommended)
-
-User: "A - Fix the tests"
-
-Team: Invoking staff-developer to fix failing tests
-  [staff-developer fixes tests]
-  ✅ Tests now passing
-
-Team: Continuing pre-flight...
-  ⚠️  Code not reviewed by staff-engineer
+  Suggest:
+  - Run this command from the branch with a PR
+  - Or specify PR number: /check-and-merge #123
   
-  → Recommend review before PR
-  Options:
-  A) Run staff-engineer review now
-  B) Skip review
-  C) Cancel
-
-User: "A - Review the code"
-
-Team: Invoking staff-engineer
-  [staff-engineer reviews]
-  ⚠️  Found 2 minor improvements
-  - Add comment explaining RLS policy
-  - Extract magic number to constant
-  
-  → Not critical, but recommended
-  Options:
-  A) Have staff-developer fix
-  B) Proceed anyway
-  C) User will fix
-
-User: "A - Fix those"
-
-Team: Invoking staff-developer with feedback
-  [staff-developer applies improvements]
-  ✅ Improvements applied
-
-Team: [Phase 1] Re-verifying...
-  ✅ Tests still passing
-  ✅ Code reviewed and issues addressed
-  ✅ Ready for PR
-
-Team: [Phase 2-6] Continue workflow...
-  [Creates PR successfully]
-  
-Team: [Phase 6] Report
-  ✅ PR #101 created
-  Note: Had to fix 2 failing tests and apply 2 code review improvements
-  Ready for human review
+  Exit Phase 7
+fi
 ```
 
-**Result:** PR created in ~15 minutes including fixes
+**If PR number provided:** Use provided number instead of detecting from branch
 
----
+#### 2. Fetch PR Status
 
-### Example 3: Multiple Issues
+```bash
+# Get comprehensive PR status
+gh pr view $pr_number --json \
+  state,mergeable,reviewDecision,statusCheckRollup,reviews,reviewThreads \
+  > /tmp/pr_status_$pr_number.json
 
-**Context:**
-- Feature branch: `feature/auth-improvements`
-- Issues: #50 (Rate limiting), #51 (JWT refresh)
-- Both issues partially addressed in this PR
-
-**Team workflow:**
-
-```
-User: "Create PR for auth improvements"
-
-Team: [Phase 2] Context gathering
-  Found commits: 8 commits on feature/auth-improvements
-  Found issues: #50, #51
+# Verify fetch succeeded
+if [ $? -ne 0 ]; then
+  Error: "Failed to fetch PR status from GitHub"
   
-  → Question: Does this PR fully close these issues?
-
-User: "#50 is fully closed, #51 is partial (only refresh endpoint, logout still TODO)"
-
-Team: [Phase 3] PR description
-  Generated description with:
-  - Summary: Improve auth with rate limiting and token refresh
-  - Closes: #50
-  - Part of: #51 (refresh endpoint implemented, logout deferred)
+  Possible causes:
+  - GitHub API rate limit exceeded
+  - Network timeout
+  - Invalid PR number
+  - No GitHub authentication (run: gh auth login)
   
-Team: [Phase 4-6] Continue...
-  ✅ PR #102 created
-  
-  Links:
-  - Will auto-close #50 when merged
-  - Will add comment to #51 (partial progress)
+  Exit Phase 7
+fi
 ```
 
-**Result:** Correct issue linking for partial work
+#### 3. Check Merge Criteria
+
+Check each criterion in order, tracking status:
+
+**A) PR State = OPEN**
+
+```bash
+state=$(jq -r .state /tmp/pr_status_$pr_number.json)
+
+if [ "$state" != "OPEN" ]; then
+  Error: "PR is $state, cannot merge"
+  
+  If state = "CLOSED":
+    - PR was closed without merging
+  If state = "MERGED":
+    - PR already merged
+  
+  Exit Phase 7
+fi
+
+✅ State: Open
+```
+
+**B) No Merge Conflicts**
+
+```bash
+mergeable=$(jq -r .mergeable /tmp/pr_status_$pr_number.json)
+
+if [ "$mergeable" != "MERGEABLE" ]; then
+  Error: "PR has merge conflicts"
+  
+  Resolution steps:
+  1. Pull latest main: git checkout main && git pull
+  2. Rebase your branch: git checkout [branch] && git rebase main
+  3. Resolve conflicts in files listed by git
+  4. Continue rebase: git rebase --continue
+  5. Force push: git push --force-with-lease
+  6. Run /check-and-merge again
+  
+  Exit Phase 7
+fi
+
+✅ Conflicts: None
+```
+
+**C) At Least 1 Approval**
+
+```bash
+review_decision=$(jq -r .reviewDecision /tmp/pr_status_$pr_number.json)
+
+if [ "$review_decision" != "APPROVED" ]; then
+  # Count current approvals
+  current_approvals=$(jq '[.reviews[] | select(.state == "APPROVED")] | length' \
+    /tmp/pr_status_$pr_number.json)
+  
+  Error: "PR not approved (current: $current_approvals, required: 1)"
+  
+  # Show reviewer status
+  Assigned reviewers:
+  $(jq -r '.reviews[] | "- @\(.author.login): \(.state)"' \
+    /tmp/pr_status_$pr_number.json)
+  
+  Resolution steps:
+  1. Address any requested changes
+  2. Request review from assigned reviewers
+  3. Wait for approval
+  4. Run /check-and-merge again
+  
+  Exit Phase 7
+fi
+
+✅ Approvals: [count] approved
+```
+
+**D) All Conversations Resolved**
+
+```bash
+unresolved=$(jq '[.reviewThreads[] | select(.isResolved == false)] | length' \
+  /tmp/pr_status_$pr_number.json)
+
+if [ "$unresolved" -gt 0 ]; then
+  Error: "$unresolved unresolved conversation(s)"
+  
+  # List unresolved threads
+  Unresolved threads:
+  $(jq -r '.reviewThreads[] | select(.isResolved == false) | 
+    "- \(.comments[0].path):\(.comments[0].position) - \(.comments[0].body[0:80])..."' \
+    /tmp/pr_status_$pr_number.json)
+  
+  Resolution steps:
+  1. Address each conversation thread in the PR
+  2. Click "Resolve conversation" when addressed
+  3. Run /check-and-merge again
+  
+  Exit Phase 7
+fi
+
+✅ Conversations: All resolved (0 unresolved)
+```
+
+**E) All Required Checks Passing**
+
+```bash
+# Get status check rollup
+checks=$(jq -r '.statusCheckRollup' /tmp/pr_status_$pr_number.json)
+
+# If no checks configured, skip
+if [ "$checks" = "null" ] || [ -z "$checks" ]; then
+  ⚠️  No CI/CD checks configured
+  Warning: "No status checks found - merge protection may be disabled"
+else
+  # Check each status
+  failing_checks=$(jq -r '[.statusCheckRollup[] | 
+    select(.conclusion != "SUCCESS" and .status != "COMPLETED")] | length' \
+    /tmp/pr_status_$pr_number.json)
+  
+  if [ "$failing_checks" -gt 0 ]; then
+    Error: "$failing_checks check(s) not passing"
+    
+    # Show check status
+    Check status:
+    $(jq -r '.statusCheckRollup[] | 
+      if .conclusion == "SUCCESS" then
+        "- ✅ \(.name): SUCCESS"
+      elif .status == "IN_PROGRESS" then
+        "- ⏳ \(.name): IN_PROGRESS"
+      else
+        "- ❌ \(.name): \(.conclusion // .status)"
+      end' /tmp/pr_status_$pr_number.json)
+    
+    Resolution steps:
+    1. Review check logs for failures
+    2. Fix issues locally
+    3. Push fixes to branch
+    4. Wait for checks to re-run
+    5. Run /check-and-merge again
+    
+    Exit Phase 7
+  fi
+  
+  ✅ CI/CD Checks: All required checks passing
+fi
+```
+
+#### 4. Display Status Summary
+
+**If all criteria met (ready to merge):**
+
+```
+PR #$pr_number Ready to Merge! ✅
+
+✅ State: Open
+✅ Conflicts: None
+✅ Approvals: [count] approved
+✅ Conversations: All resolved
+✅ CI/CD Checks: All [count] required checks passing
+
+Detected merge method: [method] (from repo settings)
+
+Proceed with merge?
+A) Yes, merge now with [method]
+B) Use different method (squash/merge/rebase)
+C) Cancel
+```
+
+**If not ready to merge:**
+
+```
+PR #$pr_number Status Check
+
+[Status indicators for each criterion]
+
+Not ready to merge yet.
+
+What would you like to do?
+A) I'll run /check-and-merge again when ready
+B) Show me detailed status for each check
+C) Cancel
+```
+
+#### 5. Determine Merge Method
+
+**Detect from repository settings:**
+
+```bash
+# Query repo settings
+repo_settings=$(gh repo view --json \
+  squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed)
+
+# Determine default method
+if [ "$(echo $repo_settings | jq -r .squashMergeAllowed)" = "true" ]; then
+  default_method="squash"
+elif [ "$(echo $repo_settings | jq -r .rebaseMergeAllowed)" = "true" ]; then
+  default_method="rebase"
+else
+  default_method="merge"
+fi
+
+# Check config override
+config_method=$(jq -r '.prAutopilot.autoMerge.defaultMergeMethod // null' \
+  .claude-grimoire/config.json 2>/dev/null)
+
+if [ "$config_method" != "null" ]; then
+  default_method="$config_method"
+fi
+```
+
+**Allow user override:**
+
+```
+Ask user: "Merge using [$default_method]? 
+Options:
+- squash: Combine all commits into one
+- merge: Create merge commit preserving history
+- rebase: Replay commits onto main
+- default: Use [$default_method]
+
+Enter method or press Enter for default:"
+
+merge_method=${user_choice:-$default_method}
+```
+
+#### 6. Execute Merge
+
+```bash
+# Merge the PR
+gh pr merge $pr_number --$merge_method --auto
+
+if [ $? -ne 0 ]; then
+  Error: "Merge failed"
+  
+  Common causes:
+  - Branch protection rules not met
+  - Insufficient permissions
+  - PR state changed (new commits, conflicts)
+  
+  Show error output:
+  [Error message from gh command]
+  
+  Suggestion: "Run /check-and-merge again to see updated status"
+  
+  Exit Phase 7
+fi
+
+✅ Merge initiated
+```
+
+#### 7. Post-Merge Actions
+
+**Branch cleanup (if configured):**
+
+```bash
+# Check config
+delete_branch=$(jq -r '.prAutopilot.autoMerge.deleteBranchAfterMerge // false' \
+  .claude-grimoire/config.json 2>/dev/null)
+
+if [ "$delete_branch" = "true" ]; then
+  branch_name=$(gh pr view $pr_number --json headRefName -q .headRefName)
+  
+  Ask user: "Delete branch '$branch_name'? (Y/n)"
+  
+  if [ "$response" != "n" ]; then
+    # Switch to main if on the branch
+    current_branch=$(git branch --show-current)
+    if [ "$current_branch" = "$branch_name" ]; then
+      git checkout main
+    fi
+    
+    # Delete local branch
+    git branch -D $branch_name 2>/dev/null
+    
+    # Delete remote branch (GitHub may auto-delete)
+    git push origin --delete $branch_name 2>/dev/null || true
+    
+    ✅ Branch $branch_name deleted
+  fi
+fi
+```
+
+**Success notification:**
+
+```
+✅ PR #$pr_number Merged Successfully!
+
+Details:
+- Merge method: $merge_method
+- Merged into: main
+- Branch deleted: [yes/no]
+- Merge commit: $(gh pr view $pr_number --json mergeCommit -q .mergeCommit.oid)
+
+Next steps:
+1. ✅ Changes are now in main
+2. 🚀 Check deployment status (if applicable)
+3. 📊 Monitor production metrics
+
+View merged PR: $(gh pr view $pr_number --json url -q .url)
+```
+
+**Optional deployment check:**
+
+```
+auto_check_deploy=$(jq -r '.prAutopilot.autoMerge.autoCheckDeployment // false' \
+  .claude-grimoire/config.json 2>/dev/null)
+
+if [ "$auto_check_deploy" = "true" ]; then
+  Ask user: "Check deployment status? (Y/n)"
+  
+  if [ "$response" != "n" ]; then
+    # Query deployment status
+    gh api repos/{owner}/{repo}/deployments \
+      --jq '.[] | select(.ref == "main") | 
+      "Environment: \(.environment), State: \(.state)"' | head -5
+  fi
+fi
+```
+
+**Output:** Successfully merged PR with all safety checks validated
 
 ---
 
@@ -658,6 +892,9 @@ Short message OK → PR title only
 - ✅ Assign reviewers from CODEOWNERS
 - ✅ Link to all related issues
 - ✅ Use proper issue references (Closes vs Part of)
+- ✅ Use /check-and-merge to eliminate manual merge steps
+- ✅ Verify all conversations resolved before merge
+- ✅ Let CI/CD checks complete before merging
 
 ### Don't:
 - ❌ Create PRs with failing tests
@@ -666,6 +903,9 @@ Short message OK → PR title only
 - ❌ Force push without confirmation
 - ❌ Commit secrets or sensitive data
 - ❌ Create PRs from main/master branch
+- ❌ Bypass branch protection to force merge
+- ❌ Merge with unresolved review conversations
+- ❌ Merge before CI/CD checks complete
 
 ## Error Handling
 
@@ -740,12 +980,15 @@ The team is successful when:
 - ✅ Proper issue linking (auto-close when merged)
 - ✅ Appropriate reviewers assigned
 - ✅ Labels applied correctly
+- ✅ Auto-merge works when all criteria met
+- ✅ Clear status reporting at each check
+- ✅ Safe merge validation (no bypassing checks)
 - ✅ No failed PRs due to test/review skipping
 - ✅ User confidence in automated process
 
 ## Time Savings
 
-**Traditional PR creation time:**
+**Traditional PR workflow:**
 - Stage changes: 30 seconds
 - Write commit message: 2-3 minutes
 - Push to remote: 30 seconds
@@ -753,18 +996,31 @@ The team is successful when:
 - Fill PR form: 5-10 minutes
 - Add labels: 30 seconds
 - Assign reviewers: 1 minute
-- **Total: 10-15 minutes per PR**
+- Wait for approval: (varies)
+- Check approval status: 1-2 minutes
+- Verify CI/CD passed: 1-2 minutes
+- Click merge button: 30 seconds
+- **Total: 13-20 minutes per PR**
 
-**With pr-autopilot-team:**
+**With pr-autopilot-team (Phases 1-7):**
 - Invoke team: 10 seconds
 - Answer questions: 1-2 minutes
-- Team executes: 1-2 minutes
-- **Total: 2-4 minutes per PR**
+- Team executes Phases 1-6: 1-2 minutes
+- Wait for approval: (varies)
+- Run /check-and-merge: 30 seconds
+- **Total: 2-5 minutes active time per PR**
 
-**Savings:** 6-11 minutes per PR (60-75% reduction)
+**Savings:** 11-15 minutes per PR (70-80% reduction in active time)
+
+**Breakdown by phase:**
+- Phases 1-6 (PR creation): 6-11 minutes saved (60-75% reduction)
+- Phase 7 (auto-merge): 4-5 minutes saved (80-90% reduction)
 
 **Additional benefits:**
 - Zero mistakes in issue references
 - Consistent PR description quality
 - Never forget to assign reviewers
 - Always includes proper test plan
+- Never merge without required approvals
+- Never merge with failing CI/CD checks
+- Automatic branch cleanup (optional)

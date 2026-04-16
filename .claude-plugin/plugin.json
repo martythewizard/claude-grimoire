@@ -1,0 +1,22 @@
+{
+  "name": "claude-grimoire",
+  "description": "Complete three-layer agentic toolkit for Product Engineers - automates feature delivery and incident response with 50-87% time savings",
+  "version": "2.0.0",
+  "author": {
+    "name": "Product Engineers"
+  },
+  "homepage": "https://github.com/martythewizard/claude-grimoire",
+  "repository": "https://github.com/martythewizard/claude-grimoire",
+  "license": "MIT",
+  "keywords": [
+    "automation",
+    "feature-delivery",
+    "pr-automation",
+    "planning",
+    "architecture",
+    "code-review",
+    "github",
+    "initiatives",
+    "incidents"
+  ]
+}
