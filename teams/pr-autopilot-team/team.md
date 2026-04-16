@@ -416,11 +416,13 @@ Automate the final steps of feature delivery:
    ```
    Show report
    
-   Additional options:
-   "Would you like me to:
-   A) Monitor CI/CD status and notify on failure
-   B) Open PR in browser
-   C) Nothing, I'm done here"
+   Would you like me to:
+   A) Check and merge when approved (/check-and-merge)
+   B) Monitor CI/CD status and notify on failure
+   C) Open PR in browser
+   D) Nothing, I'm done here
+   
+   If user chooses A: Proceed to Phase 7
    ```
 
 **Output:** User informed of PR status
