@@ -103,6 +103,65 @@ fi
 echo "Context extraction complete."
 ```
 
+### Helper: resolve_repo Function
+
+Resolve repository for a JIRA task's github_issue:
+
+```bash
+# Function: Resolve repository for a JIRA task's github_issue
+# (Same implementation as in initiative-validator)
+resolve_repo() {
+    local task_key="$1"
+    local epic_milestone="$2"
+    local yaml_file="$3"
+    
+    # Step 1: Check for explicit repo field
+    local explicit_repo=$(grep -A 3 "key: $task_key" "$yaml_file" | grep "repo:" | awk '{print $2}')
+    
+    if [ -n "$explicit_repo" ]; then
+        echo "$explicit_repo"
+        return 0
+    fi
+    
+    # Step 2: Infer from milestone
+    if ! grep -q "^workstreams:" "$yaml_file"; then
+        echo ""  # Cannot infer
+        return 1
+    fi
+    
+    # Find workstreams with matching milestone title
+    local matching_repos=()
+    local current_repo=""
+    local in_milestones=false
+    
+    while IFS= read -r line; do
+        if echo "$line" | grep -q "^  - name:"; then
+            current_repo=""
+            in_milestones=false
+        elif echo "$line" | grep -q "    repo:"; then
+            current_repo=$(echo "$line" | awk '{print $2}')
+        elif echo "$line" | grep -q "    milestones:"; then
+            in_milestones=true
+        elif echo "$line" | grep -q "      - title:" && [ "$in_milestones" = true ]; then
+            local ms_title=$(echo "$line" | sed 's/.*title: "\?\([^"]*\)"\?/\1/')
+            if [ "$ms_title" = "$epic_milestone" ] && [ -n "$current_repo" ]; then
+                matching_repos+=("$current_repo")
+                in_milestones=false
+            fi
+        fi
+    done < <(grep -A 500 "^workstreams:" "$yaml_file")
+    
+    # Return first match or empty
+    if [ ${#matching_repos[@]} -gt 0 ]; then
+        echo "${matching_repos[0]}"
+        return 0
+    fi
+    
+    echo ""
+    return 1
+}
+```
+
 ### Step 2: Search GitHub Project for Untracked Issues (Optional)
 
 Query GitHub Project v2 for issues not tracked in YAML:
