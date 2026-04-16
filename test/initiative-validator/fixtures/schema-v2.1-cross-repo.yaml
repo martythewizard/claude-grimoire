@@ -1,0 +1,71 @@
+schema_version: 2
+
+name: "Cross-Repo Tracking Test Initiative"
+description: "Test fixture for schema v2.1 - cross-repo tracking with warning"
+status: active
+phase: early-development
+owner: testuser
+team:
+  - testuser
+
+github_project:
+  org: testorg
+  number: 5
+  id: "TEST_PROJECT_ID_5"
+
+progress:
+  github_issues: 2/4
+  jira_epics: 1/1
+  jira_stories: 2/4
+  milestones: 1/1
+  last_reconciled: "2026-04-15"
+
+workstreams:
+  - name: "Core Infrastructure"
+    repo: testorg/test-repo
+    milestones:
+      - title: "M1 — Foundation Setup"
+        number: 1
+        due: "2026-05-15"
+        status: in-progress
+
+  - name: "API Development"
+    repo: testorg/test-api
+    milestones:
+      - title: "M4 — API Integration"
+        number: 1
+        due: "2026-08-15"
+        status: planning
+
+jira:
+  project_key: TEST
+  parent_key: TEST-100
+  board_url: "https://jira.example.com/projects/TEST"
+  epics:
+    - key: TEST-101
+      milestone: "M1 — Foundation Setup"
+      status: In Progress
+      tasks:
+        - key: TEST-201
+          github_issue: 10
+          repo: testorg/test-api
+          status: In Progress
+          # CROSS-REPO TRACKING!
+          # Milestone M1 belongs to Core workstream (testorg/test-repo)
+          # But task explicitly uses testorg/test-api
+          # Should warn: "Task TEST-201 explicitly uses repo 'testorg/test-api'
+          #               but milestone 'M1 — Foundation Setup' belongs to workstream
+          #               'Core Infrastructure' with repo 'testorg/test-repo'.
+          #               Verify this is intentional."
+
+        - key: TEST-202
+          github_issue: 5
+          repo: testorg/test-repo
+          status: Done
+          # Normal case - explicit repo matches milestone's workstream
+
+tags:
+  - testing
+  - schema-v2.1
+  - cross-repo-tracking
+  - edge-case
