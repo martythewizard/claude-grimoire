@@ -1,0 +1,63 @@
+schema_version: 2
+
+name: "Single Repo Test Initiative"
+description: "Test fixture for schema v2.1 - single repo with inference"
+status: active
+phase: early-development
+owner: testuser
+team:
+  - testuser
+
+github_project:
+  org: testorg
+  number: 1
+  id: "TEST_PROJECT_ID"
+
+progress:
+  github_issues: 3/6
+  jira_epics: 2/2
+  jira_stories: 3/6
+  milestones: 2/2
+  last_reconciled: "2026-04-15"
+
+workstreams:
+  - name: "Core Infrastructure"
+    repo: testorg/test-repo
+    milestones:
+      - title: "M1 — Foundation Setup"
+        number: 1
+        due: "2026-05-15"
+        status: in-progress
+      - title: "M2 — Feature Development"
+        number: 2
+        due: "2026-06-30"
+        status: planning
+
+jira:
+  project_key: TEST
+  parent_key: TEST-100
+  board_url: "https://jira.example.com/projects/TEST"
+  epics:
+    - key: TEST-101
+      milestone: "M1 — Foundation Setup"
+      status: In Progress
+      tasks:
+        - key: TEST-201
+          github_issue: 1
+          status: In Progress
+        - key: TEST-202
+          github_issue: 2
+          status: Done
+
+    - key: TEST-102
+      milestone: "M2 — Feature Development"
+      status: Backlog
+      tasks:
+        - key: TEST-203
+          github_issue: 5
+          status: Backlog
+
+tags:
+  - testing
+  - schema-v2.1
+  - single-repo
