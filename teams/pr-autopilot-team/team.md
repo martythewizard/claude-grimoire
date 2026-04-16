@@ -980,6 +980,9 @@ The team is successful when:
 - ✅ Proper issue linking (auto-close when merged)
 - ✅ Appropriate reviewers assigned
 - ✅ Labels applied correctly
+- ✅ Auto-merge works when all criteria met
+- ✅ Clear status reporting at each check
+- ✅ Safe merge validation (no bypassing checks)
 - ✅ No failed PRs due to test/review skipping
 - ✅ User confidence in automated process
 
