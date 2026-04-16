@@ -680,6 +680,18 @@ export CONFLUENCE_API_TOKEN="your-token-here"
 
 ## Changelog
 
+### v2.1.0 - Schema v2.1 Support (2026-04-15)
+
+**New Features:**
+- Optional `repo` field for JIRA tasks to disambiguate issue numbers in multi-repo initiatives
+- Milestone-based repo inference when `repo` field is omitted
+- Ambiguous milestone detection with warnings
+- Cross-repo tracking validation with intentionality warnings
+
+**Compatibility:**
+- Fully backward compatible with schema v2.0
+- Existing YAMLs without `repo` fields work unchanged
+
 ### v2.0.0 - Schema v2 Support (2026-04-15)
 
 **Breaking Changes:**

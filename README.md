@@ -248,7 +248,7 @@ End-to-end incident response from alert to post-mortem with automated context ga
 ---
 
 ### 🔍 initiative-validator
-Validate initiative YAML files against GitHub, JIRA, and Confluence.
+Validate initiative YAML files (schema v2.1) against GitHub, JIRA, and Confluence.
 
 ```bash
 /initiative-validator path/to/initiative.yaml
@@ -257,18 +257,18 @@ Validate initiative YAML files against GitHub, JIRA, and Confluence.
 **When to use:** Before committing initiative YAML changes, or when checking for stale references
 
 **What it does:**
-- Validates YAML schema and required fields
+- Validates YAML schema v2.1 with optional repo field support
 - Checks GitHub milestones exist in referenced repos
-- Verifies JIRA epic keys are accessible
+- Verifies JIRA epic keys are accessible with repo inference
 - Confirms Confluence pages exist
 - Generates actionable markdown report
 
-[Full documentation →](skills/initiative-validator/skill.md)
+[Full documentation →](skills/initiative-validator/skill.md) | [Schema v2.1 Guide →](docs/schema-v2.1-user-guide.md)
 
 ---
 
 ### 🔍 initiative-discoverer
-Find existing JIRA epics that should be tracked in an initiative using AI-driven matching.
+Find existing JIRA epics that should be tracked in an initiative using AI-driven matching (schema v2.1).
 
 ```bash
 /initiative-discoverer path/to/initiative.yaml
@@ -278,13 +278,13 @@ Find existing JIRA epics that should be tracked in an initiative using AI-driven
 
 **What it does:**
 - Extracts context from YAML (description, team, repos, tags)
-- Searches JIRA for epics assigned to team members
-- Filters out already-tracked epics
+- Searches GitHub Projects and workstream repos for untracked issues
+- Deduplicates with repo-aware matching (repo|issue_num)
 - Uses AI to rank candidates by relevance (1-10)
 - Generates YAML snippets ready to merge
 - Falls back to heuristics if AI unavailable
 
-[Full documentation →](skills/initiative-discoverer/skill.md)
+[Full documentation →](skills/initiative-discoverer/skill.md) | [Schema v2.1 Guide →](docs/schema-v2.1-user-guide.md)
 
 ## Agents
 
@@ -463,7 +463,9 @@ export COMPANY_CLI_PATH=/path/to/cli
 ### Guides
 - [Getting Started Guide](docs/getting-started.md) - Setup and first use
 - [Configuration Guide](docs/configuration-guide.md) - All configuration options
+- [Schema v2.1 User Guide](docs/schema-v2.1-user-guide.md) - Optional repo field for multi-repo initiatives
 - [Contributing Guide](CONTRIBUTING.md) - How to contribute
+- [Changelog](CHANGELOG.md) - Version history and changes
 
 ### Examples
 - [PR Workflow Example](docs/examples/pr-workflow.md) - Using pr-author skill

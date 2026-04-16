@@ -629,6 +629,17 @@ export ANTHROPIC_API_KEY="your-claude-api-key"
 
 ## Changelog
 
+### v2.1.0 - Schema v2.1 Support (2026-04-15)
+
+**New Features:**
+- Repo-aware deduplication using `repo|issue_num` format
+- Uses `resolve_repo()` function to determine correct repository for each tracked issue
+- Prevents false positives when same issue number exists across multiple repos
+
+**Compatibility:**
+- Fully backward compatible with schema v2.0
+- Existing YAMLs without `repo` fields work unchanged
+
 ### v2.0.0 - Schema v2 Support (2026-04-15)
 
 **Breaking Changes:**
