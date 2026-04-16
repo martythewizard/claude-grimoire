@@ -15,6 +15,12 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Validate skill.md exists before proceeding
+if [ ! -f "$VALIDATOR_SKILL" ]; then
+    echo -e "${RED}Error: skill.md not found at $VALIDATOR_SKILL${NC}"
+    exit 1
+fi
+
 echo "=== Schema v2.1 Validator Integration Tests ==="
 echo
 
@@ -60,6 +66,28 @@ HEADER
     sed -n '/### Step 6: Generate Report/,/## Configuration/p' "$VALIDATOR_SKILL" | \
         sed -n '/^```bash$/,/^```$/p' | \
         grep -v '^```' >> "$temp_script"
+
+    # Validate extraction succeeded
+    if [ ! -s "$temp_script" ]; then
+        echo -e "${RED}Error: Failed to extract validator code from skill.md${NC}"
+        rm -f "$temp_script"
+        exit 1
+    fi
+
+    # Sanity check: validator should be substantial
+    line_count=$(wc -l < "$temp_script")
+    if [ "$line_count" -lt 100 ]; then
+        echo -e "${RED}Error: Extracted validator suspiciously small ($line_count lines)${NC}"
+        rm -f "$temp_script"
+        exit 1
+    fi
+
+    # Check for key patterns
+    if ! grep -q "^resolve_repo()" "$temp_script"; then
+        echo -e "${RED}Error: resolve_repo() function not found in extracted validator${NC}"
+        rm -f "$temp_script"
+        exit 1
+    fi
 
     chmod +x "$temp_script"
     echo "$temp_script"
