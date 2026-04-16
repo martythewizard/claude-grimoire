@@ -28,12 +28,13 @@ create_discoverer_script() {
     local temp_script=$(mktemp)
 
     # Extract bash code blocks from skill.md
-    # Step 1: Context Extraction (with resolve_repo)
+    # Step 1: Context Extraction
     sed -n '/### Step 1: Extract Context from Schema v2 YAML/,/### Helper: resolve_repo Function/p' "$DISCOVERER_SKILL" | \
         sed -n '/^```bash$/,/^```$/p' | sed '1d;$d' >> "$temp_script"
 
-    # Extract resolve_repo function
-    sed -n '/^resolve_repo() {/,/^}$/p' "$DISCOVERER_SKILL" >> "$temp_script"
+    # Helper: resolve_repo function
+    sed -n '/### Helper: resolve_repo Function/,/### Step 2: Search GitHub Project for Untracked Issues/p' "$DISCOVERER_SKILL" | \
+        sed -n '/^```bash$/,/^```$/p' | sed '1d;$d' >> "$temp_script"
 
     # Step 2: GitHub Project Query
     sed -n '/### Step 2: Search GitHub Project for Untracked Issues/,/### Step 3: Search Workstream Repos for Untracked Issues/p' "$DISCOVERER_SKILL" | \
@@ -65,7 +66,7 @@ create_discoverer_script() {
     fi
 
     line_count=$(wc -l < "$temp_script")
-    if [ "$line_count" -lt 50 ]; then
+    if [ "$line_count" -lt 100 ]; then
         echo -e "${RED}Error: Extracted discoverer suspiciously small ($line_count lines)${NC}"
         rm -f "$temp_script"
         exit 1
