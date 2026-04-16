@@ -353,9 +353,11 @@ while IFS='|' read -r number title repo_or_milestone milestone_or_assignee assig
         issue_labels="$labels_or_repo"
     fi
     
-    # Check if issue is already tracked
-    if [[ ",$EXISTING_ISSUES," == *",$issue_num,"* ]]; then
-        echo "Skipping #$issue_num (already tracked in JIRA epic tasks)"
+    # Check if issue is already tracked (with repo)
+    CANDIDATE_KEY="$issue_repo|$issue_num"
+    
+    if echo ",$EXISTING_ISSUES," | grep -q ",$CANDIDATE_KEY,"; then
+        echo "Skipping #$issue_num ($issue_repo) - already tracked"
         continue
     fi
     
@@ -495,7 +497,7 @@ while IFS='|' read -r score issue_num issue_title issue_repo issue_milestone iss
     [ -z "$score" ] && continue
     if [ "$score" -ge 8 ]; then
         HIGH_FOUND=true
-        echo "### #$issue_num: $issue_title"
+        echo "### Issue #$issue_num ($issue_repo): $issue_title"
         echo "**Repo:** $issue_repo"
         echo "**Milestone:** $issue_milestone"
         echo "**Score:** $score/10"
@@ -530,7 +532,7 @@ while IFS='|' read -r score issue_num issue_title issue_repo issue_milestone iss
     [ -z "$score" ] && continue
     if [ "$score" -ge 5 ] && [ "$score" -lt 8 ]; then
         MEDIUM_FOUND=true
-        echo "### #$issue_num: $issue_title"
+        echo "### Issue #$issue_num ($issue_repo): $issue_title"
         echo "**Repo:** $issue_repo"
         echo "**Milestone:** $issue_milestone"
         echo "**Score:** $score/10"
