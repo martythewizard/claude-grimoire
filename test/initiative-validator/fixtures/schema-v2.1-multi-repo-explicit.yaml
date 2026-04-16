@@ -1,0 +1,79 @@
+schema_version: 2
+
+name: "Multi-Repo Explicit Test Initiative"
+description: "Test fixture for schema v2.1 - multi-repo with explicit repo fields"
+status: active
+phase: early-development
+owner: testuser
+team:
+  - testuser
+
+github_project:
+  org: testorg
+  number: 2
+  id: "TEST_PROJECT_ID_2"
+
+progress:
+  github_issues: 4/8
+  jira_epics: 2/2
+  jira_stories: 4/8
+  milestones: 3/3
+  last_reconciled: "2026-04-15"
+
+workstreams:
+  - name: "Core Infrastructure"
+    repo: testorg/test-repo
+    milestones:
+      - title: "M1 — Foundation Setup"
+        number: 1
+        due: "2026-05-15"
+        status: in-progress
+      - title: "M2 — Feature Development"
+        number: 2
+        due: "2026-06-30"
+        status: planning
+
+  - name: "API Development"
+    repo: testorg/test-api
+    milestones:
+      - title: "M2 — Feature Development"
+        number: 1
+        due: "2026-06-30"
+        status: planning
+
+jira:
+  project_key: TEST
+  parent_key: TEST-100
+  board_url: "https://jira.example.com/projects/TEST"
+  epics:
+    - key: TEST-101
+      milestone: "M1 — Foundation Setup"
+      status: In Progress
+      tasks:
+        - key: TEST-201
+          github_issue: 1
+          repo: testorg/test-repo
+          status: In Progress
+        - key: TEST-202
+          github_issue: 5
+          repo: testorg/test-repo
+          status: Done
+
+    - key: TEST-102
+      milestone: "M2 — Feature Development"
+      status: In Progress
+      tasks:
+        - key: TEST-203
+          github_issue: 1
+          repo: testorg/test-api
+          status: In Progress
+        - key: TEST-204
+          github_issue: 10
+          repo: testorg/test-repo
+          status: Backlog
+
+tags:
+  - testing
+  - schema-v2.1
+  - multi-repo
+  - explicit-repo
