@@ -82,11 +82,53 @@ fi
 WORKSTREAM_REPOS=$(grep -A 500 "^workstreams:" "$YAML_FILE" | grep "repo:" | awk '{print $2}' | sort -u)
 echo "Workstream repos: $(echo $WORKSTREAM_REPOS | tr '\n' ', ')"
 
-# Extract existing github_issue numbers from JIRA epic tasks (for deduplication)
-EXISTING_ISSUES=$(grep -A 500 "^jira:" "$YAML_FILE" | grep "github_issue:" | awk '{print $2}' | sort -n | tr '\n' ',' | sed 's/,$//')
+# Extract existing github_issue numbers with repos from JIRA epic tasks (for deduplication)
+echo "Extracting tracked issues with repo resolution..."
+
+EXISTING_ISSUES=""
+
+if grep -q "^jira:" "$YAML_FILE"; then
+    # Extract all epic keys
+    EPIC_KEYS=$(grep -A 500 "^jira:" "$YAML_FILE" | grep "  - key:" | awk '{print $3}')
+    
+    for epic_key in $EPIC_KEYS; do
+        # Extract milestone for epic
+        EPIC_MILESTONE=$(grep -A 5 "key: $epic_key" "$YAML_FILE" | grep "milestone:" | sed 's/.*milestone: "\?\([^"]*\)"\?/\1/')
+        
+        # Extract tasks for this epic
+        TASK_DATA=$(grep -A 50 "key: $epic_key" "$YAML_FILE" | grep -A 30 "tasks:")
+        
+        # Process each task
+        while IFS= read -r line; do
+            if echo "$line" | grep -q "        - key:"; then
+                TASK_KEY=$(echo "$line" | awk '{print $3}')
+                
+                # Get github_issue for this task
+                GITHUB_ISSUE=$(grep -A 2 "key: $TASK_KEY" "$YAML_FILE" | grep "github_issue:" | awk '{print $2}')
+                
+                if [ -n "$GITHUB_ISSUE" ]; then
+                    # Resolve repo for this task
+                    RESOLVED_REPO=$(resolve_repo "$TASK_KEY" "$EPIC_MILESTONE" "$YAML_FILE")
+                    
+                    if [ -n "$RESOLVED_REPO" ]; then
+                        # Store as repo|issue_num for deduplication
+                        if [ -z "$EXISTING_ISSUES" ]; then
+                            EXISTING_ISSUES="$RESOLVED_REPO|$GITHUB_ISSUE"
+                        else
+                            EXISTING_ISSUES="$EXISTING_ISSUES,$RESOLVED_REPO|$GITHUB_ISSUE"
+                        fi
+                    fi
+                fi
+            fi
+        done <<< "$TASK_DATA"
+    done
+fi
 
 if [ -n "$EXISTING_ISSUES" ]; then
-    echo "Existing tracked issues: $EXISTING_ISSUES"
+    TRACKED_COUNT=$(echo "$EXISTING_ISSUES" | tr ',' '\n' | wc -l)
+    echo "Existing tracked issues: $TRACKED_COUNT"
+    echo "  Format: repo|issue_num"
+    echo "  $EXISTING_ISSUES"
 else
     echo "Existing tracked issues: None"
 fi
