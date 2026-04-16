@@ -1,7 +1,7 @@
 ---
 name: pr-autopilot-team
-description: Fully automated PR creation after code review passes - handles git operations and PR submission
-version: 1.0.0
+description: Fully automated PR creation and merging - handles git operations, PR submission, and auto-merge when approved
+version: 2.0.0
 author: claude-grimoire
 team_type: automation
 requires:
@@ -15,11 +15,11 @@ optional:
 
 # PR Autopilot Team
 
-Fully automated pull request creation team that handles the complete PR workflow after code has been reviewed and approved. Automates git operations, PR description generation, and PR submission with proper labels and reviewers.
+Fully automated pull request creation and merging team that handles the complete PR workflow from creation to merge. Automates git operations, PR description generation, PR submission with metadata, and auto-merge when all approval criteria are met.
 
 ## Purpose
 
-Automate the final steps of feature delivery:
+Automate the complete PR workflow:
 - Verify code has passed review
 - Run final test suite
 - Generate comprehensive PR description
@@ -27,6 +27,7 @@ Automate the final steps of feature delivery:
 - Push branch to remote
 - Create GitHub PR with metadata
 - Apply labels and assign reviewers
+- Monitor and auto-merge when approved
 
 ## When to Use
 
