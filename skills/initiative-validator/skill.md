@@ -360,12 +360,13 @@ if grep -q "^jira:" "$YAML_FILE" && grep -q "  project_key:" "$YAML_FILE"; then
                 JIRA_FINDINGS+=("Critical: JIRA task $task_key references github_issue #$GITHUB_ISSUE in $RESOLVED_REPO but issue not found")
             fi
             
-            # Check for cross-repo mismatch (explicit repo ≠ milestone's workstream repo)
+            # Check for cross-repo mismatch: warn if explicit repo differs from what milestone would infer
+            # This catches cases where a task explicitly tracks an issue from a different workstream's repo
             EXPLICIT_REPO=$(grep -A 3 "key: $task_key" "$YAML_FILE" | grep "repo:" | awk '{print $2}')
             
             if [ -n "$EXPLICIT_REPO" ]; then
                 # Find milestone's workstream repo for comparison
-                MILESTONE_WS_REPO=""
+                local MILESTONE_WS_REPO=""
                 local current_ws_repo=""
                 local in_ws_milestones=false
                 
