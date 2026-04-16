@@ -892,6 +892,9 @@ Short message OK → PR title only
 - ✅ Assign reviewers from CODEOWNERS
 - ✅ Link to all related issues
 - ✅ Use proper issue references (Closes vs Part of)
+- ✅ Use /check-and-merge to eliminate manual merge steps
+- ✅ Verify all conversations resolved before merge
+- ✅ Let CI/CD checks complete before merging
 
 ### Don't:
 - ❌ Create PRs with failing tests
@@ -900,6 +903,9 @@ Short message OK → PR title only
 - ❌ Force push without confirmation
 - ❌ Commit secrets or sensitive data
 - ❌ Create PRs from main/master branch
+- ❌ Bypass branch protection to force merge
+- ❌ Merge with unresolved review conversations
+- ❌ Merge before CI/CD checks complete
 
 ## Error Handling
 
