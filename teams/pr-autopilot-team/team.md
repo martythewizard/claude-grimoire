@@ -440,7 +440,16 @@ The team respects configuration from `.claude-grimoire/config.json`:
     "setAsDraft": false,
     "runTests": true,
     "requireReview": true,
-    "defaultLabels": ["needs-review", "automated"]
+    "defaultLabels": ["needs-review", "automated"],
+    "autoMerge": {
+      "enabled": true,
+      "deleteBranchAfterMerge": true,
+      "requireAllConversationsResolved": true,
+      "minApprovals": 1,
+      "respectBranchProtection": true,
+      "defaultMergeMethod": null,
+      "autoCheckDeployment": false
+    }
   },
   "github": {
     "defaultReviewers": ["team-lead", "senior-dev"],
@@ -448,6 +457,16 @@ The team respects configuration from `.claude-grimoire/config.json`:
   }
 }
 ```
+
+**Auto-Merge Configuration:**
+
+- `enabled` - Enable/disable Phase 7 functionality (default: true)
+- `deleteBranchAfterMerge` - Prompt to delete branch after successful merge (default: true)
+- `requireAllConversationsResolved` - Block merge if review threads unresolved (default: true)
+- `minApprovals` - Minimum approvals required (overridden by branch protection) (default: 1)
+- `respectBranchProtection` - Honor GitHub branch protection rules (default: true)
+- `defaultMergeMethod` - Override repo default: "squash", "merge", "rebase", or null for auto-detect (default: null)
+- `autoCheckDeployment` - Query deployment status after merge (default: false)
 
 ## Usage Examples
 
