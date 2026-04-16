@@ -456,6 +456,378 @@ See [examples.md](./references/examples.md) for detailed workflow examples inclu
 
 ---
 
+### Phase 7: Monitor and Auto-Merge
+
+**Goal:** Check PR readiness and merge when all criteria are met
+
+**Trigger Options:**
+1. After Phase 6 completion - team asks user if they want to check and merge
+2. User runs `/check-and-merge` from any branch with a PR
+3. User runs `/check-and-merge #123` to check specific PR
+
+**Process:**
+
+#### 1. Verify PR Exists
+
+```bash
+# Get PR for current branch
+pr_number=$(gh pr view --json number -q .number 2>/dev/null)
+
+if [ -z "$pr_number" ]; then
+  Error: "No PR found for current branch"
+  
+  Suggest:
+  - Run this command from the branch with a PR
+  - Or specify PR number: /check-and-merge #123
+  
+  Exit Phase 7
+fi
+```
+
+**If PR number provided:** Use provided number instead of detecting from branch
+
+#### 2. Fetch PR Status
+
+```bash
+# Get comprehensive PR status
+gh pr view $pr_number --json \
+  state,mergeable,reviewDecision,statusCheckRollup,reviews,reviewThreads \
+  > /tmp/pr_status_$pr_number.json
+
+# Verify fetch succeeded
+if [ $? -ne 0 ]; then
+  Error: "Failed to fetch PR status from GitHub"
+  
+  Possible causes:
+  - GitHub API rate limit exceeded
+  - Network timeout
+  - Invalid PR number
+  - No GitHub authentication (run: gh auth login)
+  
+  Exit Phase 7
+fi
+```
+
+#### 3. Check Merge Criteria
+
+Check each criterion in order, tracking status:
+
+**A) PR State = OPEN**
+
+```bash
+state=$(jq -r .state /tmp/pr_status_$pr_number.json)
+
+if [ "$state" != "OPEN" ]; then
+  Error: "PR is $state, cannot merge"
+  
+  If state = "CLOSED":
+    - PR was closed without merging
+  If state = "MERGED":
+    - PR already merged
+  
+  Exit Phase 7
+fi
+
+✅ State: Open
+```
+
+**B) No Merge Conflicts**
+
+```bash
+mergeable=$(jq -r .mergeable /tmp/pr_status_$pr_number.json)
+
+if [ "$mergeable" != "MERGEABLE" ]; then
+  Error: "PR has merge conflicts"
+  
+  Resolution steps:
+  1. Pull latest main: git checkout main && git pull
+  2. Rebase your branch: git checkout [branch] && git rebase main
+  3. Resolve conflicts in files listed by git
+  4. Continue rebase: git rebase --continue
+  5. Force push: git push --force-with-lease
+  6. Run /check-and-merge again
+  
+  Exit Phase 7
+fi
+
+✅ Conflicts: None
+```
+
+**C) At Least 1 Approval**
+
+```bash
+review_decision=$(jq -r .reviewDecision /tmp/pr_status_$pr_number.json)
+
+if [ "$review_decision" != "APPROVED" ]; then
+  # Count current approvals
+  current_approvals=$(jq '[.reviews[] | select(.state == "APPROVED")] | length' \
+    /tmp/pr_status_$pr_number.json)
+  
+  Error: "PR not approved (current: $current_approvals, required: 1)"
+  
+  # Show reviewer status
+  Assigned reviewers:
+  $(jq -r '.reviews[] | "- @\(.author.login): \(.state)"' \
+    /tmp/pr_status_$pr_number.json)
+  
+  Resolution steps:
+  1. Address any requested changes
+  2. Request review from assigned reviewers
+  3. Wait for approval
+  4. Run /check-and-merge again
+  
+  Exit Phase 7
+fi
+
+✅ Approvals: [count] approved
+```
+
+**D) All Conversations Resolved**
+
+```bash
+unresolved=$(jq '[.reviewThreads[] | select(.isResolved == false)] | length' \
+  /tmp/pr_status_$pr_number.json)
+
+if [ "$unresolved" -gt 0 ]; then
+  Error: "$unresolved unresolved conversation(s)"
+  
+  # List unresolved threads
+  Unresolved threads:
+  $(jq -r '.reviewThreads[] | select(.isResolved == false) | 
+    "- \(.comments[0].path):\(.comments[0].position) - \(.comments[0].body[0:80])..."' \
+    /tmp/pr_status_$pr_number.json)
+  
+  Resolution steps:
+  1. Address each conversation thread in the PR
+  2. Click "Resolve conversation" when addressed
+  3. Run /check-and-merge again
+  
+  Exit Phase 7
+fi
+
+✅ Conversations: All resolved (0 unresolved)
+```
+
+**E) All Required Checks Passing**
+
+```bash
+# Get status check rollup
+checks=$(jq -r '.statusCheckRollup' /tmp/pr_status_$pr_number.json)
+
+# If no checks configured, skip
+if [ "$checks" = "null" ] || [ -z "$checks" ]; then
+  ⚠️  No CI/CD checks configured
+  Warning: "No status checks found - merge protection may be disabled"
+else
+  # Check each status
+  failing_checks=$(jq -r '[.statusCheckRollup[] | 
+    select(.conclusion != "SUCCESS" and .status != "COMPLETED")] | length' \
+    /tmp/pr_status_$pr_number.json)
+  
+  if [ "$failing_checks" -gt 0 ]; then
+    Error: "$failing_checks check(s) not passing"
+    
+    # Show check status
+    Check status:
+    $(jq -r '.statusCheckRollup[] | 
+      if .conclusion == "SUCCESS" then
+        "- ✅ \(.name): SUCCESS"
+      elif .status == "IN_PROGRESS" then
+        "- ⏳ \(.name): IN_PROGRESS"
+      else
+        "- ❌ \(.name): \(.conclusion // .status)"
+      end' /tmp/pr_status_$pr_number.json)
+    
+    Resolution steps:
+    1. Review check logs for failures
+    2. Fix issues locally
+    3. Push fixes to branch
+    4. Wait for checks to re-run
+    5. Run /check-and-merge again
+    
+    Exit Phase 7
+  fi
+  
+  ✅ CI/CD Checks: All required checks passing
+fi
+```
+
+#### 4. Display Status Summary
+
+**If all criteria met (ready to merge):**
+
+```
+PR #$pr_number Ready to Merge! ✅
+
+✅ State: Open
+✅ Conflicts: None
+✅ Approvals: [count] approved
+✅ Conversations: All resolved
+✅ CI/CD Checks: All [count] required checks passing
+
+Detected merge method: [method] (from repo settings)
+
+Proceed with merge?
+A) Yes, merge now with [method]
+B) Use different method (squash/merge/rebase)
+C) Cancel
+```
+
+**If not ready to merge:**
+
+```
+PR #$pr_number Status Check
+
+[Status indicators for each criterion]
+
+Not ready to merge yet.
+
+What would you like to do?
+A) I'll run /check-and-merge again when ready
+B) Show me detailed status for each check
+C) Cancel
+```
+
+#### 5. Determine Merge Method
+
+**Detect from repository settings:**
+
+```bash
+# Query repo settings
+repo_settings=$(gh repo view --json \
+  squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed)
+
+# Determine default method
+if [ "$(echo $repo_settings | jq -r .squashMergeAllowed)" = "true" ]; then
+  default_method="squash"
+elif [ "$(echo $repo_settings | jq -r .rebaseMergeAllowed)" = "true" ]; then
+  default_method="rebase"
+else
+  default_method="merge"
+fi
+
+# Check config override
+config_method=$(jq -r '.prAutopilot.autoMerge.defaultMergeMethod // null' \
+  .claude-grimoire/config.json 2>/dev/null)
+
+if [ "$config_method" != "null" ]; then
+  default_method="$config_method"
+fi
+```
+
+**Allow user override:**
+
+```
+Ask user: "Merge using [$default_method]? 
+Options:
+- squash: Combine all commits into one
+- merge: Create merge commit preserving history
+- rebase: Replay commits onto main
+- default: Use [$default_method]
+
+Enter method or press Enter for default:"
+
+merge_method=${user_choice:-$default_method}
+```
+
+#### 6. Execute Merge
+
+```bash
+# Merge the PR
+gh pr merge $pr_number --$merge_method --auto
+
+if [ $? -ne 0 ]; then
+  Error: "Merge failed"
+  
+  Common causes:
+  - Branch protection rules not met
+  - Insufficient permissions
+  - PR state changed (new commits, conflicts)
+  
+  Show error output:
+  [Error message from gh command]
+  
+  Suggestion: "Run /check-and-merge again to see updated status"
+  
+  Exit Phase 7
+fi
+
+✅ Merge initiated
+```
+
+#### 7. Post-Merge Actions
+
+**Branch cleanup (if configured):**
+
+```bash
+# Check config
+delete_branch=$(jq -r '.prAutopilot.autoMerge.deleteBranchAfterMerge // false' \
+  .claude-grimoire/config.json 2>/dev/null)
+
+if [ "$delete_branch" = "true" ]; then
+  branch_name=$(gh pr view $pr_number --json headRefName -q .headRefName)
+  
+  Ask user: "Delete branch '$branch_name'? (Y/n)"
+  
+  if [ "$response" != "n" ]; then
+    # Switch to main if on the branch
+    current_branch=$(git branch --show-current)
+    if [ "$current_branch" = "$branch_name" ]; then
+      git checkout main
+    fi
+    
+    # Delete local branch
+    git branch -D $branch_name 2>/dev/null
+    
+    # Delete remote branch (GitHub may auto-delete)
+    git push origin --delete $branch_name 2>/dev/null || true
+    
+    ✅ Branch $branch_name deleted
+  fi
+fi
+```
+
+**Success notification:**
+
+```
+✅ PR #$pr_number Merged Successfully!
+
+Details:
+- Merge method: $merge_method
+- Merged into: main
+- Branch deleted: [yes/no]
+- Merge commit: $(gh pr view $pr_number --json mergeCommit -q .mergeCommit.oid)
+
+Next steps:
+1. ✅ Changes are now in main
+2. 🚀 Check deployment status (if applicable)
+3. 📊 Monitor production metrics
+
+View merged PR: $(gh pr view $pr_number --json url -q .url)
+```
+
+**Optional deployment check:**
+
+```
+auto_check_deploy=$(jq -r '.prAutopilot.autoMerge.autoCheckDeployment // false' \
+  .claude-grimoire/config.json 2>/dev/null)
+
+if [ "$auto_check_deploy" = "true" ]; then
+  Ask user: "Check deployment status? (Y/n)"
+  
+  if [ "$response" != "n" ]; then
+    # Query deployment status
+    gh api repos/{owner}/{repo}/deployments \
+      --jq '.[] | select(.ref == "main") | 
+      "Environment: \(.environment), State: \(.state)"' | head -5
+  fi
+fi
+```
+
+**Output:** Successfully merged PR with all safety checks validated
+
+---
+
 ## Decision Trees
 
 ### Should we run tests?
