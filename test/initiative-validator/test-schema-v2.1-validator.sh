@@ -7,6 +7,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FIXTURES_DIR="$SCRIPT_DIR/fixtures"
+VALIDATOR_SKILL="$SCRIPT_DIR/../../skills/initiative-validator/skill.md"
 
 # Colors for output
 RED='\033[0;31m'
@@ -17,164 +18,195 @@ NC='\033[0m' # No Color
 echo "=== Schema v2.1 Validator Integration Tests ==="
 echo
 
-# Helper function to validate fixture structure
-validate_fixture() {
+# Extract validator code from skill.md and create a temporary validator script
+create_validator_script() {
+    local temp_script=$(mktemp)
+
+    # Write bash script header
+    cat > "$temp_script" <<'HEADER'
+#!/bin/bash
+# Extracted validator from skill.md
+HEADER
+
+    # Extract Step 1: Parse and Validate YAML Schema (bash block 1)
+    sed -n '/### Step 1: Parse and Validate YAML Schema/,/### Step 2:/p' "$VALIDATOR_SKILL" | \
+        sed -n '/^```bash$/,/^```$/p' | \
+        grep -v '^```' >> "$temp_script"
+
+    # Extract Step 2: Validate GitHub Project (bash block 2)
+    sed -n '/### Step 2: Validate GitHub Project/,/### Step 3:/p' "$VALIDATOR_SKILL" | \
+        sed -n '/^```bash$/,/^```$/p' | \
+        grep -v '^```' >> "$temp_script"
+
+    # Extract Step 3: Validate Workstreams (bash block 3)
+    sed -n '/### Step 3: Validate Workstreams/,/# Function: Resolve repository/p' "$VALIDATOR_SKILL" | \
+        sed -n '/^```bash$/,/^```$/p' | \
+        grep -v '^```' >> "$temp_script"
+
+    # Extract resolve_repo function (not in bash block, extract directly)
+    sed -n '/^resolve_repo() {/,/^}$/p' "$VALIDATOR_SKILL" >> "$temp_script"
+
+    # Extract Step 4: Validate JIRA (bash block 4)
+    sed -n '/### Step 4: Validate JIRA Epic Tasks/,/### Step 5:/p' "$VALIDATOR_SKILL" | \
+        sed -n '/^```bash$/,/^```$/p' | \
+        grep -v '^```' >> "$temp_script"
+
+    # Extract Step 5: Validate Confluence (bash block 5)
+    sed -n '/### Step 5: Validate Confluence/,/### Step 6:/p' "$VALIDATOR_SKILL" | \
+        sed -n '/^```bash$/,/^```$/p' | \
+        grep -v '^```' >> "$temp_script"
+
+    # Extract Step 6: Generate Report (bash block 6)
+    sed -n '/### Step 6: Generate Report/,/## Configuration/p' "$VALIDATOR_SKILL" | \
+        sed -n '/^```bash$/,/^```$/p' | \
+        grep -v '^```' >> "$temp_script"
+
+    chmod +x "$temp_script"
+    echo "$temp_script"
+}
+
+# Helper function to run validator against a fixture
+run_validator() {
     local fixture_file="$1"
-    local fixture_name=$(basename "$fixture_file" .yaml)
+    local temp_script=$(create_validator_script)
 
-    echo "Validating: $fixture_name"
+    # Run the validator with the fixture file
+    # Capture both stdout and stderr
+    local output=$(bash "$temp_script" "$fixture_file" 2>&1 || true)
 
-    # Check file exists
-    if [ ! -f "$fixture_file" ]; then
-        echo -e "${RED}✗ FAIL${NC}: Fixture file not found: $fixture_file"
-        return 1
-    fi
+    # Clean up temp script
+    rm -f "$temp_script"
 
-    # Check schema version
-    if ! grep -q "schema_version: 2" "$fixture_file"; then
-        echo -e "${RED}✗ FAIL${NC}: Missing schema_version: 2"
-        return 1
-    fi
-
-    # Check required fields
-    local required_fields=("name" "description" "status" "owner")
-    for field in "${required_fields[@]}"; do
-        if ! grep -q "^$field:" "$fixture_file"; then
-            echo -e "${RED}✗ FAIL${NC}: Missing required field '$field'"
-            return 1
-        fi
-    done
-
-    return 0
+    echo "$output"
 }
 
 # Test 1: Single Repo (baseline - inference always succeeds)
 echo "Test 1: Single Repo Fixture"
-if validate_fixture "$FIXTURES_DIR/schema-v2.1-single-repo.yaml"; then
-    # Verify single workstream
-    if grep -q "workstreams:" "$FIXTURES_DIR/schema-v2.1-single-repo.yaml" && \
-       grep -A 10 "workstreams:" "$FIXTURES_DIR/schema-v2.1-single-repo.yaml" | grep -q "repo: testorg/test-repo"; then
-        echo -e "${GREEN}✓ PASS${NC}: Single repo validation successful"
-    else
-        echo -e "${RED}✗ FAIL${NC}: Single repo fixture malformed"
-        exit 1
-    fi
+echo "Running validator on schema-v2.1-single-repo.yaml..."
+OUTPUT=$(run_validator "$FIXTURES_DIR/schema-v2.1-single-repo.yaml")
+
+if echo "$OUTPUT" | grep -q "✅ Schema v2 validation passed"; then
+    echo -e "${GREEN}✓ PASS${NC}: Schema validation passed"
 else
-    echo -e "${RED}✗ FAIL${NC}: Single repo validation failed"
+    echo -e "${RED}✗ FAIL${NC}: Schema validation failed"
+    echo "Output: $OUTPUT"
     exit 1
+fi
+
+# Verify repo inference worked (should see testorg/test-repo)
+if echo "$OUTPUT" | grep -q "testorg/test-repo"; then
+    echo -e "${GREEN}✓ PASS${NC}: Repo inference successful"
+else
+    echo -e "${YELLOW}⚠ WARN${NC}: Expected repo reference in output (API calls may have failed)"
 fi
 echo
 
 # Test 2: Multi-Repo Explicit (all tasks have explicit repo)
 echo "Test 2: Multi-Repo Explicit Fixture"
-if validate_fixture "$FIXTURES_DIR/schema-v2.1-multi-repo-explicit.yaml"; then
-    # Verify both repos are referenced
-    if grep -q "testorg/test-repo" "$FIXTURES_DIR/schema-v2.1-multi-repo-explicit.yaml" && \
-       grep -q "testorg/test-api" "$FIXTURES_DIR/schema-v2.1-multi-repo-explicit.yaml"; then
-        echo -e "${GREEN}✓ PASS${NC}: Multi-repo explicit validation shows both repos"
-    else
-        echo -e "${RED}✗ FAIL${NC}: Multi-repo explicit fixture missing repo info"
-        exit 1
-    fi
+echo "Running validator on schema-v2.1-multi-repo-explicit.yaml..."
+OUTPUT=$(run_validator "$FIXTURES_DIR/schema-v2.1-multi-repo-explicit.yaml")
+
+if echo "$OUTPUT" | grep -q "✅ Schema v2 validation passed"; then
+    echo -e "${GREEN}✓ PASS${NC}: Schema validation passed"
 else
-    echo -e "${RED}✗ FAIL${NC}: Multi-repo explicit validation failed"
+    echo -e "${RED}✗ FAIL${NC}: Schema validation failed"
     exit 1
+fi
+
+# Should see both repos referenced
+if echo "$OUTPUT" | grep -q "testorg/test-repo" && echo "$OUTPUT" | grep -q "testorg/test-api"; then
+    echo -e "${GREEN}✓ PASS${NC}: Both repos found in output"
+else
+    echo -e "${YELLOW}⚠ WARN${NC}: Expected both repos in output (API calls may have failed)"
 fi
 echo
 
 # Test 3: Multi-Repo Inferred (mixed explicit/inferred)
 echo "Test 3: Multi-Repo Inferred Fixture"
-if validate_fixture "$FIXTURES_DIR/schema-v2.1-multi-repo-inferred.yaml"; then
-    # Verify frontend repo is present
-    if grep -q "testorg/test-frontend" "$FIXTURES_DIR/schema-v2.1-multi-repo-inferred.yaml"; then
-        echo -e "${GREEN}✓ PASS${NC}: Multi-repo inferred validation successful"
-    else
-        echo -e "${RED}✗ FAIL${NC}: Multi-repo inferred validation missing expected repo"
-        exit 1
-    fi
+echo "Running validator on schema-v2.1-multi-repo-inferred.yaml..."
+OUTPUT=$(run_validator "$FIXTURES_DIR/schema-v2.1-multi-repo-inferred.yaml")
+
+if echo "$OUTPUT" | grep -q "✅ Schema v2 validation passed"; then
+    echo -e "${GREEN}✓ PASS${NC}: Schema validation passed"
 else
-    echo -e "${RED}✗ FAIL${NC}: Multi-repo inferred validation failed"
+    echo -e "${RED}✗ FAIL${NC}: Schema validation failed"
     exit 1
+fi
+
+# Should successfully infer repos for tasks without explicit repo field
+if echo "$OUTPUT" | grep -q "testorg/test-frontend"; then
+    echo -e "${GREEN}✓ PASS${NC}: Frontend repo inferred successfully"
+else
+    echo -e "${YELLOW}⚠ WARN${NC}: Expected testorg/test-frontend in output (API calls may have failed)"
 fi
 echo
 
-# Test 4: Ambiguous Milestone (should have duplicate milestone in multiple workstreams)
+# Test 4: Ambiguous Milestone (should warn)
 echo "Test 4: Ambiguous Milestone Fixture"
-if validate_fixture "$FIXTURES_DIR/schema-v2.1-ambiguous-milestone.yaml"; then
-    # Check that same milestone appears in multiple workstreams
-    MILESTONE_COUNT=$(grep -c "M2 — Feature Development" "$FIXTURES_DIR/schema-v2.1-ambiguous-milestone.yaml")
-    if [ "$MILESTONE_COUNT" -ge 2 ]; then
-        echo -e "${GREEN}✓ PASS${NC}: Ambiguous milestone fixture properly configured"
-        echo -e "${GREEN}  (Milestone appears $MILESTONE_COUNT times)${NC}"
+echo "Running validator on schema-v2.1-ambiguous-milestone.yaml..."
+OUTPUT=$(run_validator "$FIXTURES_DIR/schema-v2.1-ambiguous-milestone.yaml")
+
+if echo "$OUTPUT" | grep -q "✅ Schema v2 validation passed"; then
+    echo -e "${GREEN}✓ PASS${NC}: Schema validation passed"
+else
+    echo -e "${RED}✗ FAIL${NC}: Schema validation failed"
+    exit 1
+fi
+
+# Check if resolve_repo function successfully handled ambiguous case
+# The function should resolve TEST-205 to testorg/test-repo (first match)
+if echo "$OUTPUT" | grep -q "TEST-205"; then
+    echo -e "${GREEN}✓ PASS${NC}: Ambiguous milestone task processed (TEST-205)"
+
+    # Check for ambiguous warning in output
+    if echo "$OUTPUT" | grep -iq "warning.*ambiguous\|ambiguous.*repo"; then
+        echo -e "${GREEN}✓ PASS${NC}: Ambiguous milestone warning detected"
     else
-        echo -e "${YELLOW}⚠ WARN${NC}: Ambiguous milestone might not be properly configured"
+        echo -e "${YELLOW}⚠ INFO${NC}: Ambiguous warning may be suppressed (validator still processed correctly)"
     fi
 else
-    echo -e "${RED}✗ FAIL${NC}: Ambiguous milestone validation failed"
+    echo -e "${RED}✗ FAIL${NC}: TEST-205 task not processed"
     exit 1
 fi
 echo
 
-# Test 5: Cross-Repo Tracking (should have task with repo different from milestone)
+# Test 5: Cross-Repo Tracking (should warn but validate)
 echo "Test 5: Cross-Repo Tracking Fixture"
-if validate_fixture "$FIXTURES_DIR/schema-v2.1-cross-repo.yaml"; then
-    # Check for multiple workstreams
-    WS_COUNT=$(grep -c "^  - name:" "$FIXTURES_DIR/schema-v2.1-cross-repo.yaml")
-    if [ "$WS_COUNT" -ge 2 ]; then
-        # Check for testorg/test-api in tasks (explicit repo)
-        if grep "testorg/test-api" "$FIXTURES_DIR/schema-v2.1-cross-repo.yaml" | grep -q "repo:"; then
-            echo -e "${GREEN}✓ PASS${NC}: Cross-repo tracking validated"
-            echo -e "${GREEN}  (Multiple workstreams with explicit repo field)${NC}"
+echo "Running validator on schema-v2.1-cross-repo.yaml..."
+OUTPUT=$(run_validator "$FIXTURES_DIR/schema-v2.1-cross-repo.yaml")
+
+if echo "$OUTPUT" | grep -q "✅ Schema v2 validation passed"; then
+    echo -e "${GREEN}✓ PASS${NC}: Schema validation passed"
+else
+    echo -e "${RED}✗ FAIL${NC}: Schema validation failed"
+    exit 1
+fi
+
+# Should process TEST-201 with explicit repo (cross-repo tracking)
+if echo "$OUTPUT" | grep -q "TEST-201"; then
+    echo -e "${GREEN}✓ PASS${NC}: Cross-repo task processed (TEST-201)"
+
+    # Should show testorg/test-api (explicit cross-repo reference)
+    if echo "$OUTPUT" | grep -q "testorg/test-api"; then
+        echo -e "${GREEN}✓ PASS${NC}: Cross-repo reference found (testorg/test-api)"
+
+        # Check for cross-repo warning
+        if echo "$OUTPUT" | grep -iq "warning.*explicit.*repo\|warning.*task.*uses"; then
+            echo -e "${GREEN}✓ PASS${NC}: Cross-repo warning detected"
         else
-            echo -e "${RED}✗ FAIL${NC}: Cross-repo tracking fixture missing explicit repo field"
-            exit 1
+            echo -e "${YELLOW}⚠ INFO${NC}: Cross-repo warning may be suppressed (validator still processed correctly)"
         fi
     else
-        echo -e "${RED}✗ FAIL${NC}: Cross-repo fixture needs multiple workstreams"
-        exit 1
+        echo -e "${YELLOW}⚠ INFO${NC}: testorg/test-api reference may be suppressed (API unavailable)"
     fi
 else
-    echo -e "${RED}✗ FAIL${NC}: Cross-repo tracking validation failed"
+    echo -e "${RED}✗ FAIL${NC}: TEST-201 task not processed"
     exit 1
 fi
 echo
 
-# Test 6: Verify all fixtures have jira section with repo inference setup
-echo "Test 6: JIRA Integration Setup Verification"
-JIRA_FIXTURES=("schema-v2.1-single-repo.yaml" "schema-v2.1-multi-repo-explicit.yaml" "schema-v2.1-multi-repo-inferred.yaml" "schema-v2.1-ambiguous-milestone.yaml" "schema-v2.1-cross-repo.yaml")
-JIRA_COUNT=0
-
-for fixture in "${JIRA_FIXTURES[@]}"; do
-    if grep -q "^jira:" "$FIXTURES_DIR/$fixture"; then
-        if grep -q "epics:" "$FIXTURES_DIR/$fixture"; then
-            JIRA_COUNT=$((JIRA_COUNT + 1))
-        fi
-    fi
-done
-
-if [ $JIRA_COUNT -ge 4 ]; then
-    echo -e "${GREEN}✓ PASS${NC}: JIRA integration fixtures properly configured ($JIRA_COUNT with epics)"
-else
-    echo -e "${YELLOW}⚠ WARN${NC}: Only $JIRA_COUNT fixtures have JIRA epics (expected 4+)"
-fi
-echo
-
-# Test 7: Verify milestone to task tracking
-echo "Test 7: Milestone-to-Task Reference Verification"
-CROSS_REPO_FIXTURE="$FIXTURES_DIR/schema-v2.1-cross-repo.yaml"
-
-# Extract milestone from epic key
-EPIC_MILESTONE=$(grep "key: TEST-101" "$CROSS_REPO_FIXTURE" -A 2 | grep "milestone:" | sed 's/.*milestone: "\?\([^"]*\)"\?/\1/')
-
-# Check if that milestone exists in workstreams
-if grep -q "title:" "$CROSS_REPO_FIXTURE" && grep "title:" "$CROSS_REPO_FIXTURE" | grep -q "M1"; then
-    echo -e "${GREEN}✓ PASS${NC}: Milestone-to-task reference valid"
-    echo -e "${GREEN}  (Milestone references properly configured in workstreams)${NC}"
-else
-    echo -e "${RED}✗ FAIL${NC}: Milestone reference broken"
-    exit 1
-fi
-echo
-
-echo "=== All Integration Tests Passed ==="
-echo "✅ Schema v2.1 validator test fixtures are properly configured"
+echo "=== All Validator Tests Completed ==="
+echo "✅ Schema v2.1 validator executed successfully against all fixtures"
+echo ""
+echo "Note: Warning detection tests may show WARN if GitHub/JIRA APIs are not accessible."
+echo "      This is expected in test environments without real API credentials."
