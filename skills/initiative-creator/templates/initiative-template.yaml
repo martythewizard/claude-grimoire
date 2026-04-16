@@ -1,0 +1,72 @@
+# Initiative Template - Schema v2
+# Based on eci-global/initiatives structure
+# Only include sections with actual data
+
+schema_version: 2
+name: ""  # Required: Initiative name
+description: >-  # Required: Use >- for multi-line folded scalar
+
+status: planning  # Required: active | planning | paused | completed | cancelled
+owner: ""  # Required: GitHub username
+team:  # Required but can be empty array
+  - ""
+
+# Optional: Only include if GitHub Project exists or is being created
+# github_project:
+#   org: ""
+#   number: 0
+#   id: ""  # Optional: GraphQL node ID
+
+# Optional: Only include if initiative has distinct phases
+# phase: ""
+
+# Optional: Only include if workstreams are defined
+# workstreams:
+#   - name: ""
+#     repo: ""  # owner/repo format
+#     milestones:
+#       - title: ""
+#         number: 0
+#         due: "YYYY-MM-DD"
+#         status: ""  # Freeform: deployed, code-complete, in-progress, etc.
+
+# Optional: Only include if progress tracking is active
+# progress:
+#   github_issues: ""  # e.g., "76/76"
+#   jira_epics: ""
+#   jira_stories: ""
+#   tests: ""
+#   infrastructure: ""
+#   last_reconciled: "YYYY-MM-DD"
+
+# Optional: Only include if JIRA tracking exists
+# jira:
+#   project_key: ""
+#   parent_key: ""
+#   board_url: ""
+#   epics:
+#     - key: ""
+#       milestone: ""
+#       status: ""
+
+# Optional: Only include if Confluence docs exist
+# confluence:
+#   space_key: ""
+#   page_id: ""
+#   page_version: 0
+
+# Optional: Include if Steward monitoring is enabled
+# steward:
+#   enabled: true
+#   last_run: "YYYY-MM-DDTHH:MM:SSZ"
+
+# Optional: Only include if tags are defined
+# tags:
+#   - ""
+
+# Optional: Only include if Pulse notifications configured
+# pulse:
+#   scan_window: ""  # e.g., "24h"
+#   channels:
+#     - ""
+#   discussion_category: ""

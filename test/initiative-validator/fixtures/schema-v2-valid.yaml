@@ -1,0 +1,46 @@
+schema_version: 2
+
+name: "Test Initiative - Cost Management"
+description: >-
+  Test initiative for validating schema v2 parsing.
+  Includes workstreams, GitHub project, and JIRA integration.
+status: active
+owner: testuser
+team:
+  - testuser
+  - reviewer
+
+github_project:
+  org: test-org
+  number: 1
+
+workstreams:
+  - name: "Core Cost Logic"
+    repo: test-org/cost-service
+    milestones:
+      - title: "M1 — Foundation"
+        number: 1
+        due: "2026-06-30"
+        status: in-progress
+      - title: "M2 — Optimization"
+        number: 2
+        due: "2026-07-31"
+        status: planned
+
+jira:
+  project_key: TEST
+  epics:
+    - key: TEST-100
+      milestone: "M1 — Foundation"
+      status: In Progress
+      tasks:
+        - key: TEST-101
+          github_issue: 10
+          status: Done
+        - key: TEST-102
+          github_issue: 11
+          status: In Progress
+
+tags:
+  - test
+  - cost-management

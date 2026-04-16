@@ -1,7 +1,7 @@
 ---
 name: initiative-breakdown
 description: Break GitHub initiatives into actionable tasks with dependencies and estimates
-version: 1.0.0
+version: 2.0.0
 author: claude-grimoire
 requires:
   - github
@@ -34,37 +34,236 @@ Convert high-level initiatives into concrete implementation tasks:
 
 ## Workflow
 
-### 1. Fetch Initiative Context
+### 1. Input Detection and Context Gathering
 
-Use the `github-context-agent` to gather full initiative details:
+The skill accepts flexible input and uses `github-context-agent` to resolve it.
 
-**Required information:**
-- Initiative title and description
-- Goals and success metrics
-- Scope definition (in/out of scope)
-- Dependencies and constraints
-- Timeline and milestones
-- Related issues and PRs
+**Supported Input Types:**
 
-**Invoke agent:**
 ```
-github-context-agent({
-  "type": "initiative",
-  "identifier": "owner/repo#123",
-  "depth": "deep"
-})
+Initiative YAML:
+  initiatives/2026-q1-ai-cost-intelligence-platform.yaml
+  2026-q1-ai-cost-intelligence
+  ai-cost-intelligence (search term)
+
+GitHub Project:
+  eci-global#14
+  https://github.com/orgs/eci-global/projects/14
+
+Workstream:
+  initiative:ai-cost workstream:S3 Data Lake
+
+Milestone:
+  eci-global/repo milestone:"M1 - Foundation"
+  eci-global/repo milestone:5
+
+Standalone Issue:
+  eci-global/repo#123 (break into related tasks)
 ```
 
-**Validate initiative is ready for breakdown:**
-- ✅ Goals clearly defined
-- ✅ Scope boundaries established
-- ✅ Success criteria specified
-- ✅ Technical approach outlined
+**Step 1: Invoke github-context-agent**
 
-**If initiative is incomplete:**
-> "This initiative is missing [goals/scope/success criteria]. I recommend using `/initiative-creator` to refine it before breaking it down. Should we do that first?"
+```
+Call github-context-agent with:
+  identifier: <user-provided-input>
+  depth: "deep"
+  include: {
+    yaml: true,
+    project: true,
+    workstreams: true,
+    milestones: true,
+    progress: true
+  }
+```
 
-### 2. Analyze Current Codebase
+**Step 2: Handle Response**
+
+```
+If success:
+  Extract context based on type:
+    - initiative: workstreams, github_project, progress
+    - project: items by repo, milestones
+    - workstream: milestones, repo
+    - milestone: issues, repo
+    - issue: create related tasks
+    
+If error (ambiguous):
+  Present options to user
+  Re-invoke with clarified identifier
+  
+If error (not found):
+  Suggest alternatives or creation
+```
+
+**Example Invocation:**
+
+```
+User: /initiative-breakdown initiatives/2026-q1-coralogix-quota-manager.yaml
+
+Skill: Fetching initiative context via github-context-agent...
+
+Agent returns:
+  type: initiative
+  metadata: { name: "2026 Q1 - Coralogix Quota Manager", status: "active", ... }
+  github_project: { org: "eci-global", number: 8, ... }
+  workstreams: [
+    {
+      name: "Quota Enforcement",
+      repo: "eci-global/coralogix",
+      milestones: [...]
+    }
+  ]
+
+Skill: ✓ Initiative found
+  Name: 2026 Q1 - Coralogix Quota Manager
+  Status: active
+  Workstreams: 1
+  GitHub Project: eci-global#8
+
+Ready to break down. Continue? (y/n)
+```
+
+### 2. Initiative Breakdown Workflow
+
+When context type is "initiative", break into tasks across all workstreams.
+
+**Process:**
+
+**Step 1: Analyze Initiative Structure**
+
+```
+From context:
+  - Extract all workstreams and their repos
+  - Extract milestones per workstream
+  - Note github_project if exists
+  - Check progress metrics
+```
+
+**Step 2: Validate Scope**
+
+```
+Ask user:
+"This initiative has <N> workstreams and <M> milestones. Should I:
+A) Break down all workstreams
+B) Break down specific workstreams only (choose which)
+C) Skip workstreams, create general tasks
+
+If scope is too large (>10 milestones):
+  Recommend breaking down by workstream instead
+  "This is large. Consider using workstream-specific breakdown:
+   /initiative-breakdown initiative:name workstream:<workstream-name>"
+```
+
+**Step 3: Generate Tasks by Workstream**
+
+For each workstream:
+```
+1. Identify task categories:
+   - Foundation tasks (abstractions, core logic)
+   - Implementation tasks (features, endpoints)
+   - Testing tasks (unit, integration)
+   - Documentation tasks (README, API docs)
+
+2. For each task:
+   - Create task description
+   - Map to specific milestone (from workstream)
+   - Add acceptance criteria
+   - Estimate effort (S/M/L)
+   - Note dependencies
+
+3. Group tasks by milestone
+```
+
+**Step 4: Create GitHub Issues**
+
+For each task:
+```bash
+# Create issue
+gh issue create \
+  --repo <workstream-repo> \
+  --title "[<milestone>] <task-title>" \
+  --body "<task-description>" \
+  --label task,<category>
+  
+# If initiative has github_project: Link to project
+if [ -n "$github_project" ]; then
+  gh project item-add <project-number> \
+    --owner <org> \
+    --url <issue-url>
+fi
+
+# If task maps to milestone: Assign milestone
+if [ -n "$milestone" ]; then
+  gh issue edit <issue-number> \
+    --repo <repo> \
+    --milestone "<milestone-title>"
+fi
+
+# Add initiative reference comment
+gh issue comment <issue-number> \
+  --repo <repo> \
+  --body "Part of initiative: [<name>](<yaml-url>)"
+```
+
+**Step 5: Report Progress**
+
+```
+✅ Breakdown complete!
+
+Created <N> tasks across <M> workstreams:
+
+Workstream: Quota Enforcement (eci-global/coralogix)
+  Milestone M1: 5 tasks (#234, #235, #236, #237, #238)
+  Milestone M2: 4 tasks (#239, #240, #241, #242)
+
+All tasks linked to:
+  - GitHub Project: eci-global#8
+  - Initiative YAML: initiatives/2026-q1-coralogix-quota-manager.yaml
+
+Next steps:
+1. Review tasks in GitHub Project
+2. Assign tasks to team members
+3. Start with M1 tasks (foundation)
+```
+
+### 3. Project Breakdown Workflow
+
+When context type is "project", organize by repos/milestones.
+
+```
+1. Fetch project items via github-context-agent
+2. Group existing items by repo and milestone
+3. Identify gaps (areas without tasks)
+4. Generate new tasks for gaps
+5. Create issues and link to project
+6. Check for related initiative YAML (if detected by agent)
+```
+
+### 4. Workstream Breakdown Workflow
+
+When context type is "workstream", scope to single workstream.
+
+```
+1. Extract milestones for this workstream only
+2. Generate tasks scoped to workstream's repo
+3. Assign to workstream's milestones
+4. Link to github_project if initiative has one
+5. Don't touch other workstreams
+```
+
+### 5. Milestone Breakdown Workflow
+
+When context type is "milestone", create tasks for one milestone.
+
+```
+1. See existing issues in milestone
+2. Generate additional tasks needed
+3. Create issues in milestone's repo
+4. Assign all to this milestone
+5. Link to project if milestone is part of tracked initiative
+```
+
+### 6. Analyze Current Codebase
 
 Understand existing architecture and patterns:
 
@@ -87,7 +286,7 @@ Understand existing architecture and patterns:
 - Shared UI components or styles
 - Database migration patterns
 
-### 3. Determine Complexity
+### 7. Determine Complexity
 
 Assess whether architectural design is needed:
 
@@ -108,7 +307,7 @@ Assess whether architectural design is needed:
 
 **If they choose A:** Invoke `system-architect-agent` with initiative context
 
-### 4. Identify Task Categories
+### 8. Identify Task Categories
 
 Break work into logical groupings:
 
@@ -127,7 +326,7 @@ Break work into logical groupings:
 3. Integration and testing in parallel
 4. Documentation and deployment near the end
 
-### 5. Generate Task List
+### 9. Generate Task List
 
 Create specific, actionable tasks within each category:
 
@@ -191,7 +390,7 @@ Create specific, actionable tasks within each category:
 - **Medium**: Important but not urgent
 - **Low**: Nice-to-have, can be deferred
 
-### 6. Map Dependencies
+### 10. Map Dependencies
 
 Create dependency graph showing task order:
 
@@ -218,7 +417,7 @@ graph TD
 - Critical path identified
 - Parallelizable work clearly marked
 
-### 7. Review and Refine
+### 11. Review and Refine
 
 Present the task breakdown to the user:
 
@@ -242,7 +441,7 @@ Present the task breakdown to the user:
 - Add missing edge cases or requirements
 - Adjust effort estimates
 
-### 8. Create GitHub Issues
+### 12. Create GitHub Issues
 
 Once user approves, create issues for each task:
 
@@ -278,7 +477,7 @@ gh issue comment 125 --body "Depends on #123"
 gh issue comment 123 --body "Blocks #125"
 ```
 
-### 9. Create Summary Issue Comment
+### 13. Create Summary Issue Comment
 
 Add a summary comment to the parent initiative:
 
@@ -314,7 +513,7 @@ This initiative has been broken down into [N] tasks:
 Generated with 🤖 [claude-grimoire](https://github.com/martythewizard/claude-grimoire)
 ```
 
-### 10. Report Completion
+### 14. Report Completion
 
 Provide user with summary and next steps:
 
@@ -344,6 +543,98 @@ Provide user with summary and next steps:
 > 3. Start with foundation tasks (#124, #126)
 > 4. Use `feature-delivery-team` for implementation workflow
 
+## Linking and Assignment Logic
+
+### Project Linking
+
+**When to link:**
+- Initiative context has `github_project` field
+- Project context (user provided project directly)
+- Workstream's initiative has `github_project`
+- Milestone is part of initiative with `github_project`
+
+**How to link:**
+```bash
+gh project item-add <project-number> \
+  --owner <org> \
+  --url <issue-url>
+```
+
+**Error handling:**
+- If project doesn't exist: Warn user, skip linking
+- If project is closed: Warn user, ask if should still link
+- If rate limit hit: Batch links, retry with backoff
+
+### Milestone Assignment
+
+**When to assign:**
+- Task explicitly scoped to milestone (from workstream)
+- User breaking down single milestone
+- Task description references milestone
+
+**How to assign:**
+```bash
+gh issue edit <issue-number> \
+  --repo <owner>/<repo> \
+  --milestone "<milestone-title>"
+```
+
+**Validation:**
+- Check milestone exists in repo
+- Check milestone is not closed (warn if closed)
+- Use exact milestone title (case-sensitive)
+
+### Initiative Reference
+
+**Always add initiative comment when:**
+- Input was initiative YAML
+- Input was workstream (part of initiative)
+- Input was milestone (part of initiative)
+- Input was project linked to initiative
+
+**Comment format:**
+```markdown
+Part of initiative: [<initiative-name>](<yaml-url>)
+
+Workstream: <workstream-name>
+Milestone: <milestone-title>
+```
+
+### Order of Operations
+
+```
+1. Create issue in target repo
+2. Link to project (if applicable)
+3. Assign to milestone (if applicable)
+4. Add initiative reference comment (if applicable)
+5. Add dependency comments (if task depends on others)
+```
+
+### Batch Operations
+
+For efficiency when creating many tasks:
+```bash
+# Assuming tasks, milestones, and milestone_issues are populated from context
+# Create all issues first
+issue_urls=()
+for task in "${tasks[@]}"; do
+  url=$(gh issue create --repo <repo> --title "<title>" --body "<body>")
+  issue_urls+=("$url")
+done
+
+# Batch link to project
+for url in "${issue_urls[@]}"; do
+  gh project item-add <number> --owner <org> --url "$url"
+done
+
+# Batch assign milestones (group by milestone)
+for milestone in "${milestones[@]}"; do
+  for issue_num in "${milestone_issues[$milestone]}"; do
+    gh issue edit "$issue_num" --repo <repo> --milestone "$milestone"
+  done
+done
+```
+
 ## Configuration
 
 The skill respects configuration from `.claude-grimoire/config.json`:
@@ -355,7 +646,13 @@ The skill respects configuration from `.claude-grimoire/config.json`:
     "includeFileReferences": true,
     "includeImplementationNotes": true,
     "autoInvokeArchitect": false,
-    "effortEstimationUnit": "days"
+    "effortEstimationUnit": "days",
+    "linkToProject": true,
+    "assignToMilestones": true,
+    "createMilestonesIfMissing": false,
+    "batchOperations": true,
+    "maxTasksPerBreakdown": 50,
+    "requireConfirmation": false
   },
   "github": {
     "defaultLabels": ["task"],
@@ -363,6 +660,20 @@ The skill respects configuration from `.claude-grimoire/config.json`:
   }
 }
 ```
+
+**Configuration fields:**
+
+- `defaultTaskSize` - Default effort size for new tasks (S/M/L) (default: M)
+- `includeFileReferences` - Include file paths in task descriptions (default: true)
+- `includeImplementationNotes` - Include implementation guidance (default: true)
+- `autoInvokeArchitect` - Automatically invoke system-architect-agent (default: false)
+- `effortEstimationUnit` - Time unit for estimates (days/weeks) (default: days)
+- `linkToProject` - Automatically link issues to GitHub Project if initiative has one (default: true)
+- `assignToMilestones` - Automatically assign issues to milestones when applicable (default: true)
+- `createMilestonesIfMissing` - Create milestone if it doesn't exist (default: false - warn instead)
+- `batchOperations` - Use batch operations for efficiency (default: true)
+- `maxTasksPerBreakdown` - Warn if breakdown would create more than N tasks (default: 50)
+- `requireConfirmation` - Ask before creating issues (default: false)
 
 ## Tips for Effective Breakdowns
 
@@ -400,17 +711,39 @@ The skill respects configuration from `.claude-grimoire/config.json`:
 ## Integration with Other Skills
 
 **Before initiative-breakdown:**
-- `/initiative-creator` - Create well-structured initiative first
-- Manual initiative creation - Ensure scope is well-defined
+- `/initiative-creator` - Create initiative or gather context
+- Manual initiative YAML creation
 
 **During initiative-breakdown:**
-- `github-context-agent` - Fetch initiative details (required)
+- `github-context-agent` - Fetch context for any input type (required)
 - `system-architect-agent` - Design architecture for complex initiatives (optional)
 
 **After initiative-breakdown:**
-- `feature-delivery-team` - Execute task implementation with full workflow
+- `feature-delivery-team` - Execute task implementation
 - `staff-developer` - Implement individual tasks
 - Manual assignment - Assign tasks to team members
+
+**Invoked by:**
+- `initiative-creator` - After creating initiative YAML
+- `feature-delivery-team` - Phase 3 (task breakdown)
+- Users directly via `/initiative-breakdown`
+
+**Example integration:**
+
+From initiative-creator:
+```markdown
+After creating initiative YAML:
+  Ask user: "Would you like me to break this down into tasks now?"
+  If yes: Invoke /initiative-breakdown with YAML path
+```
+
+From feature-delivery-team:
+```markdown
+Phase 3: Task Breakdown
+  If user provided initiative: Invoke /initiative-breakdown
+  If user provided project: Invoke /initiative-breakdown with project
+  If standalone: Create simple task list (no skill needed)
+```
 
 ## Examples
 
@@ -552,3 +885,43 @@ This skill is successful when:
 - ✅ Effort estimates are realistic
 - ✅ Team can start working immediately
 - ✅ Progress is trackable (clear "done" definitions)
+
+## Migration from v1.0.0
+
+Version 2.0.0 adds flexible input handling while maintaining backward compatibility.
+
+### What Changed
+
+**New in v2.0.0:**
+- Accepts any organizational pattern (initiative/project/workstream/milestone)
+- Uses github-context-agent for context resolution
+- Automatically links to GitHub Projects when applicable
+- Assigns to milestones when scoped
+- Supports breaking down individual workstreams or milestones
+
+**Still works (v1.0.0 behavior):**
+- Breaking down initiatives via YAML path
+- All task generation logic
+- Effort estimation and dependencies
+
+### Breaking Changes
+
+None. All v1.0.0 input formats continue to work.
+
+### Migration Path
+
+**For skills invoking initiative-breakdown:**
+
+Old way:
+```bash
+/initiative-breakdown owner/repo#123
+```
+
+New way (same, but now also accepts):
+```bash
+/initiative-breakdown eci-global#14  # project
+/initiative-breakdown "initiative:name workstream:ws"  # workstream
+/initiative-breakdown 'repo milestone:"M1"'  # milestone
+```
+
+No code changes needed - additional formats now supported.

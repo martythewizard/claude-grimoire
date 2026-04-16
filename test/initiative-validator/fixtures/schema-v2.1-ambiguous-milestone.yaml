@@ -1,0 +1,67 @@
+schema_version: 2
+
+name: "Ambiguous Milestone Test Initiative"
+description: "Test fixture for schema v2.1 - ambiguous milestone inference warning"
+status: active
+phase: early-development
+owner: testuser
+team:
+  - testuser
+
+github_project:
+  org: testorg
+  number: 4
+  id: "TEST_PROJECT_ID_4"
+
+progress:
+  github_issues: 2/4
+  jira_epics: 1/1
+  jira_stories: 2/4
+  milestones: 2/2
+  last_reconciled: "2026-04-15"
+
+workstreams:
+  - name: "Core Infrastructure"
+    repo: testorg/test-repo
+    milestones:
+      - title: "M2 — Feature Development"
+        number: 1
+        due: "2026-06-30"
+        status: in-progress
+
+  - name: "API Development"
+    repo: testorg/test-api
+    milestones:
+      - title: "M2 — Feature Development"
+        number: 1
+        due: "2026-06-30"
+        status: in-progress
+
+jira:
+  project_key: TEST
+  parent_key: TEST-100
+  board_url: "https://jira.example.com/projects/TEST"
+  epics:
+    - key: TEST-102
+      milestone: "M2 — Feature Development"
+      status: In Progress
+      tasks:
+        - key: TEST-205
+          github_issue: 8
+          status: In Progress
+          # No repo field - AMBIGUOUS! Same milestone in both workstreams
+          # Should warn: "Ambiguous repo for task TEST-205, milestone 'M2 — Feature Development'
+          #               appears in multiple workstreams: testorg/test-repo, testorg/test-api.
+          #               Using testorg/test-repo but add explicit 'repo' field."
+
+        - key: TEST-206
+          github_issue: 12
+          repo: testorg/test-api
+          status: Backlog
+          # Explicit repo - resolves ambiguity
+
+tags:
+  - testing
+  - schema-v2.1
+  - ambiguous-milestone
+  - edge-case

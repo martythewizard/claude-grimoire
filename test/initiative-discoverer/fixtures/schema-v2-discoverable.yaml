@@ -1,0 +1,41 @@
+schema_version: 2
+
+name: "Test Initiative - Discovery Test"
+description: >-
+  Test initiative for validating discovery with schema v2.
+  Used to test GitHub Project and workstream repo discovery.
+status: active
+owner: testuser
+team:
+  - testuser
+
+github_project:
+  org: test-org
+  number: 10
+
+workstreams:
+  - name: "Core Service"
+    repo: test-org/service
+    milestones:
+      - title: "M1 — Foundation"
+        number: 1
+        due: "2026-06-30"
+        status: in-progress
+
+jira:
+  project_key: TEST
+  epics:
+    - key: TEST-200
+      milestone: "M1 — Foundation"
+      status: In Progress
+      tasks:
+        - key: TEST-201
+          github_issue: 50
+          status: Done
+        - key: TEST-202
+          github_issue: 51
+          status: In Progress
+
+tags:
+  - test
+  - discovery

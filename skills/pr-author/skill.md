@@ -56,7 +56,57 @@ If you provide issue/initiative numbers, I'll invoke the `github-context-agent` 
 - Related PRs
 - Stakeholders
 
-### Step 3: Analyze Changes
+### Enhanced Context Gathering (NEW)
+
+After gathering basic PR context (commits, issues), I'll check for initiative/project linkage:
+
+**Check for Initiative/Project Linkage:**
+
+For each issue referenced in commits:
+1. Invoke `github-context-agent` with `type="issue"` and the issue number
+2. Extract from response:
+   - `related_initiative` (if issue is part of initiative)
+   - `related_project` (if issue is in project)
+   - `related_workstream` (if part of workstream)
+   - `related_milestone` (if assigned to milestone)
+3. Collect all linkage information
+
+If any linkage is found, I'll add a new "Related Work" section to the PR description with this information.
+
+**Note:** When initiative/project linkage is found, the "Related Work" section replaces the "Related Issues" section from the standard template. When no linkage is found, fall back to the standard "Related Issues" section.
+
+**Enhanced PR Description Template:**
+
+When linkage is detected, use this template:
+
+```markdown
+## Summary
+[existing summary]
+
+## Related Work
+
+**Issues:**
+- Closes #[number] - [title]
+
+**Initiative:** (if applicable)
+[Initiative Name](yaml-url)
+
+**Project:** (if applicable)
+https://github.com/orgs/[org]/projects/[number]
+
+**Workstream:** (if applicable)
+[Workstream Name]
+
+**Milestone:** (if applicable)
+[Milestone Title] ([repo])
+
+## Changes
+[existing changes section]
+
+[... rest of template ...]
+```
+
+### Step 4: Analyze Changes
 
 Review the actual code changes:
 ```bash
@@ -68,7 +118,7 @@ Identify:
 - Nature of changes (feature, fix, refactor, docs)
 - Scope and complexity
 
-### Step 4: Ask Clarifying Questions
+### Step 5: Ask Clarifying Questions
 
 One question at a time:
 - "What problem does this solve?"
@@ -77,7 +127,7 @@ One question at a time:
 - "Are there visual changes?" (if frontend code detected)
 - "Any migration steps needed?"
 
-### Step 5: Generate PR Title
+### Step 6: Generate PR Title
 
 Create a concise title (under 70 characters) that:
 - Follows your repo's convention (check config for prefixes like "[FEAT]")
@@ -90,7 +140,7 @@ Examples:
 - ❌ "Updated some files" (too vague)
 - ❌ "This PR adds a new feature for handling user authentication using JWT tokens and also refactors..." (too long)
 
-### Step 6: Generate PR Description
+### Step 7: Generate PR Description
 
 Create a structured description:
 
@@ -146,7 +196,7 @@ Part of initiative #456
 🤖 Generated with [claude-grimoire](https://github.com/yourusername/claude-grimoire)
 ````
 
-### Step 7: Review and Refine
+### Step 8: Review and Refine
 
 Present the generated title and description. Ask:
 - "Does this accurately capture your changes?"
@@ -154,7 +204,7 @@ Present the generated title and description. Ask:
 
 Iterate until you're satisfied.
 
-### Step 8: Optional - Create PR
+### Step 9: Optional - Create PR
 
 Ask if you want me to:
 - Just provide the description (you create the PR manually)

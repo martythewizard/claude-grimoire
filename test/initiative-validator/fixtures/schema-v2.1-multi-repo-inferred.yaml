@@ -1,0 +1,96 @@
+schema_version: 2
+
+name: "Multi-Repo Inferred Test Initiative"
+description: "Test fixture for schema v2.1 - multi-repo with mixed explicit and inferred repos"
+status: active
+phase: early-development
+owner: testuser
+team:
+  - testuser
+
+github_project:
+  org: testorg
+  number: 3
+  id: "TEST_PROJECT_ID_3"
+
+progress:
+  github_issues: 5/10
+  jira_epics: 3/3
+  jira_stories: 5/10
+  milestones: 3/3
+  last_reconciled: "2026-04-15"
+
+workstreams:
+  - name: "Core Infrastructure"
+    repo: testorg/test-repo
+    milestones:
+      - title: "M1 — Foundation Setup"
+        number: 1
+        due: "2026-05-15"
+        status: in-progress
+
+  - name: "API Development"
+    repo: testorg/test-api
+    milestones:
+      - title: "M2 — Feature Development"
+        number: 1
+        due: "2026-06-30"
+        status: planning
+
+  - name: "Frontend"
+    repo: testorg/test-frontend
+    milestones:
+      - title: "M3 — UI Development"
+        number: 1
+        due: "2026-07-31"
+        status: planning
+
+jira:
+  project_key: TEST
+  parent_key: TEST-100
+  board_url: "https://jira.example.com/projects/TEST"
+  epics:
+    - key: TEST-101
+      milestone: "M1 — Foundation Setup"
+      status: In Progress
+      tasks:
+        - key: TEST-201
+          github_issue: 1
+          status: In Progress
+          # No repo field - should infer testorg/test-repo from M1 milestone
+
+        - key: TEST-202
+          github_issue: 5
+          repo: testorg/test-repo
+          status: Done
+          # Explicit repo - validates explicit field works
+
+    - key: TEST-102
+      milestone: "M2 — Feature Development"
+      status: In Progress
+      tasks:
+        - key: TEST-203
+          github_issue: 1
+          status: In Progress
+          # No repo field - should infer testorg/test-api from M2 milestone
+
+        - key: TEST-204
+          github_issue: 10
+          repo: testorg/test-api
+          status: Backlog
+          # Explicit repo - same as would be inferred
+
+    - key: TEST-103
+      milestone: "M3 — UI Development"
+      status: Backlog
+      tasks:
+        - key: TEST-205
+          github_issue: 3
+          status: Backlog
+          # No repo field - should infer testorg/test-frontend from M3 milestone
+
+tags:
+  - testing
+  - schema-v2.1
+  - multi-repo
+  - mixed-inference
