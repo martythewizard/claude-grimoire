@@ -988,7 +988,7 @@ The team is successful when:
 
 ## Time Savings
 
-**Traditional PR creation time:**
+**Traditional PR workflow:**
 - Stage changes: 30 seconds
 - Write commit message: 2-3 minutes
 - Push to remote: 30 seconds
@@ -996,18 +996,31 @@ The team is successful when:
 - Fill PR form: 5-10 minutes
 - Add labels: 30 seconds
 - Assign reviewers: 1 minute
-- **Total: 10-15 minutes per PR**
+- Wait for approval: (varies)
+- Check approval status: 1-2 minutes
+- Verify CI/CD passed: 1-2 minutes
+- Click merge button: 30 seconds
+- **Total: 13-20 minutes per PR**
 
-**With pr-autopilot-team:**
+**With pr-autopilot-team (Phases 1-7):**
 - Invoke team: 10 seconds
 - Answer questions: 1-2 minutes
-- Team executes: 1-2 minutes
-- **Total: 2-4 minutes per PR**
+- Team executes Phases 1-6: 1-2 minutes
+- Wait for approval: (varies)
+- Run /check-and-merge: 30 seconds
+- **Total: 2-5 minutes active time per PR**
 
-**Savings:** 6-11 minutes per PR (60-75% reduction)
+**Savings:** 11-15 minutes per PR (70-80% reduction in active time)
+
+**Breakdown by phase:**
+- Phases 1-6 (PR creation): 6-11 minutes saved (60-75% reduction)
+- Phase 7 (auto-merge): 4-5 minutes saved (80-90% reduction)
 
 **Additional benefits:**
 - Zero mistakes in issue references
 - Consistent PR description quality
 - Never forget to assign reviewers
 - Always includes proper test plan
+- Never merge without required approvals
+- Never merge with failing CI/CD checks
+- Automatic branch cleanup (optional)
