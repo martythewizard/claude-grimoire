@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Comments System - Visual PRD</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      line-height: 1.6;
+      color: #333;
+      background: #f8f9fa;
+    }
+    header { background: white; padding: 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    h1 {
+      margin: 0 0 0.5rem 0;
+      border-bottom: 3px solid #2563eb;
+      padding-bottom: 0.5rem;
+      color: #1e293b;
+    }
+    h2 {
+      margin-top: 3rem;
+      color: #1e293b;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 0.5rem;
+    }
+    h3 {
+      color: #475569;
+      margin-top: 2rem;
+    }
+    .meta {
+      color: #64748b;
+      font-size: 0.9rem;
+      margin: 0;
+    }
+    .toc {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .toc h2 { margin-top: 0; border: none; }
+    .toc ul { list-style: none; padding-left: 0; }
+    .toc li { margin: 0.5rem 0; }
+    .toc a { color: #2563eb; text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    section {
+      background: white;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .mockup {
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 2rem;
+      margin: 1.5rem 0;
+      background: #f8fafc;
+    }
+    .mockup-header {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #1e293b;
+    }
+
+    /* Task Comments Mockup Styles */
+    .comment-list {
+      margin: 1rem 0;
+    }
+    .comment {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      background: white;
+    }
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+    .comment-author {
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .comment-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .comment-actions button {
+      background: none;
+      border: none;
+      color: #2563eb;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.85rem;
+    }
+    .comment-actions button:hover {
+      text-decoration: underline;
+    }
+    .comment-body {
+      color: #334155;
+    }
+
+    .comment-form {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1rem;
+      background: white;
+    }
+    .comment-form textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      resize: vertical;
+    }
+    .comment-form textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .comment-form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #475569;
+    }
+    .btn-secondary:hover {
+      background: #cbd5e1;
+    }
+
+    .requirement {
+      background: #f1f5f9;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      border-radius: 6px;
+      border-left: 4px solid #2563eb;
+    }
+    .requirement h4 {
+      margin-top: 0;
+      color: #1e293b;
+    }
+    .requirement ul {
+      margin-bottom: 0;
+    }
+
+    .mermaid {
+      background: #f8fafc;
+      padding: 2rem;
+      margin: 1.5rem 0;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .decision {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 4px;
+    }
+    .decision h4 {
+      margin-top: 0;
+      color: #92400e;
+    }
+
+    code {
+      background: #f1f5f9;
+      padding: 0.2rem 0.4rem;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+
+    pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.75rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+    footer a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-left: 0.5rem;
+    }
+    .badge-critical { background: #fee2e2; color: #991b1b; }
+    .badge-high { background: #fef3c7; color: #92400e; }
+    .badge-medium { background: #dbeafe; color: #1e40af; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Task Comments System</h1>
+    <p class="meta">Created: 2026-04-23 | Version: 1.0 | Status: Draft</p>
+  </header>
+
+  <nav class="toc">
+    <h2>Table of Contents</h2>
+    <ul>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#mockups">UI Mockups</a></li>
+      <li><a href="#flows">User Flows</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#requirements">Functional Requirements</a></li>
+      <li><a href="#nonfunctional">Non-Functional Requirements</a></li>
+      <li><a href="#technical">Technical Considerations</a></li>
+    </ul>
+  </nav>
+
+  <section id="overview">
+    <h2>Overview</h2>
+
+    <h3>Problem Statement</h3>
+    <p>Project team members need a way to have contextual conversations about specific tasks. Currently, there is no way to discuss task details, ask questions, or provide updates directly within the task context, forcing teams to use external communication channels where context is easily lost.</p>
+
+    <h3>Solution</h3>
+    <p>Implement a task comments system that allows team members to add, edit, and delete comments on any task. Comments will support markdown formatting, show timestamps, and be associated with the author's profile.</p>
+
+    <h3>Target Users</h3>
+    <ul>
+      <li><strong>Project Managers:</strong> Need to ask clarifying questions about task requirements</li>
+      <li><strong>Developers:</strong> Need to share implementation notes and technical updates</li>
+      <li><strong>Designers:</strong> Need to provide feedback on design tasks</li>
+      <li><strong>QA Engineers:</strong> Need to document bugs and testing notes</li>
+    </ul>
+
+    <h3>Success Metrics</h3>
+    <ul>
+      <li>80% of tasks have at least one comment within 7 days</li>
+      <li>Average response time to comment questions < 4 hours</li>
+      <li>90% of users report comments feature is "useful" or "very useful"</li>
+      <li>Reduction in external messaging about task details (measured by Slack mentions)</li>
+    </ul>
+  </section>
+
+  <section id="mockups">
+    <h2>UI Mockups</h2>
+
+    <h3>Mockup 1: Comment List View</h3>
+    <div class="mockup">
+      <div class="mockup-header">Task: Implement user authentication</div>
+
+      <div class="comment-list">
+        <div class="comment">
+          <div class="comment-header">
+            <span><span class="comment-author">Sarah Chen</span> • 2 hours ago</span>
+            <div class="comment-actions">
+              <button>Edit</button>
+              <button>Delete</button>
+            </div>
+          </div>
+          <div class="comment-body">
+            Should we support OAuth providers (Google, GitHub) in addition to email/password? I noticed most of our users prefer social login.
+          </div>
+        </div>
+
+        <div class="comment">
+          <div class="comment-header">
+            <span><span class="comment-author">Mike Rodriguez</span> • 1 hour ago</span>
+            <div class="comment-actions">
+              <button>Edit</button>
+              <button>Delete</button>
+            </div>
+          </div>
+          <div class="comment-body">
+            Good point! Let's add OAuth in phase 2. For now, let's focus on getting email/password working securely with proper password hashing and session management.
+          </div>
+        </div>
+
+        <div class="comment">
+          <div class="comment-header">
+            <span><span class="comment-author">Emma Thompson</span> • 30 minutes ago</span>
+            <div class="comment-actions">
+              <button>Edit</button>
+              <button>Delete</button>
+            </div>
+          </div>
+          <div class="comment-body">
+            I've started working on the backend API. Using bcrypt for password hashing and JWT for session tokens. Will have a PR ready by EOD.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Mockup 2: Add Comment Form</h3>
+    <div class="mockup">
+      <div class="mockup-header">Add a comment</div>
+
+      <div class="comment-form">
+        <textarea placeholder="Write a comment... (Markdown supported)"></textarea>
+        <div class="comment-form-actions">
+          <button class="btn btn-secondary">Cancel</button>
+          <button class="btn btn-primary">Add Comment</button>
+        </div>
+      </div>
+    </div>
+
+    <h3>Mockup 3: Edit Comment State</h3>
+    <div class="mockup">
+      <div class="mockup-header">Editing comment</div>
+
+      <div class="comment">
+        <div class="comment-header">
+          <span><span class="comment-author">Sarah Chen</span> • 2 hours ago (edited)</span>
+        </div>
+        <div class="comment-form">
+          <textarea>Should we support OAuth providers (Google, GitHub) in addition to email/password? I noticed most of our users prefer social login.</textarea>
+          <div class="comment-form-actions">
+            <button class="btn btn-secondary">Cancel</button>
+            <button class="btn btn-primary">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Mockup 4: Empty State</h3>
+    <div class="mockup">
+      <div class="mockup-header">No comments yet</div>
+
+      <div style="text-align: center; padding: 3rem; color: #64748b;">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-bottom: 1rem;">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <p style="margin: 0 0 0.5rem 0; font-weight: 500; color: #334155;">No comments yet</p>
+        <p style="margin: 0; font-size: 0.9rem;">Be the first to comment on this task</p>
+      </div>
+
+      <div class="comment-form">
+        <textarea placeholder="Write a comment... (Markdown supported)"></textarea>
+        <div class="comment-form-actions">
+          <button class="btn btn-primary">Add Comment</button>
+        </div>
+      </div>
+    </div>
+
+    <h3>Mockup 5: Error State</h3>
+    <div class="mockup">
+      <div class="mockup-header">Add a comment</div>
+
+      <div class="comment-form">
+        <textarea placeholder="Write a comment... (Markdown supported)"></textarea>
+        <div style="background: #fee2e2; color: #991b1b; padding: 0.75rem; border-radius: 4px; margin-top: 0.5rem; font-size: 0.9rem;">
+          ⚠️ Failed to save comment. Please check your connection and try again.
+        </div>
+        <div class="comment-form-actions">
+          <button class="btn btn-secondary">Cancel</button>
+          <button class="btn btn-primary">Retry</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="flows">
+    <h2>User Flows</h2>
+
+    <h3>Flow 1: Add Comment (Happy Path)</h3>
+    <div class="mermaid">
+graph TD
+    A[User views task] --> B[Scrolls to comments section]
+    B --> C[Clicks in comment textarea]
+    C --> D[Types comment text]
+    D --> E[Clicks 'Add Comment']
+    E --> F[API saves comment]
+    F --> G[Comment appears in list]
+    G --> H[Textarea clears]
+    H --> I[User sees success feedback]
+
+    style A fill:#e0f2fe
+    style I fill:#dcfce7
+    </div>
+
+    <h3>Flow 2: Edit Comment</h3>
+    <div class="mermaid">
+graph TD
+    A[User views comment list] --> B{Is comment author?}
+    B -->|No| C[Edit button hidden]
+    B -->|Yes| D[Edit button visible]
+    D --> E[User clicks Edit]
+    E --> F[Comment switches to edit mode]
+    F --> G[Textarea pre-filled with text]
+    G --> H[User modifies text]
+    H --> I[User clicks Save Changes]
+    I --> J[API updates comment]
+    J --> K[Comment updates in list]
+    K --> L[Shows 'edited' indicator]
+
+    H --> M[User clicks Cancel]
+    M --> N[Returns to view mode]
+    N --> O[Original text preserved]
+
+    style A fill:#e0f2fe
+    style L fill:#dcfce7
+    style O fill:#dcfce7
+    </div>
+
+    <h3>Flow 3: Delete Comment</h3>
+    <div class="mermaid">
+graph TD
+    A[User clicks Delete] --> B[Confirmation dialog appears]
+    B --> C{User confirms?}
+    C -->|No| D[Dialog closes]
+    D --> E[Comment remains]
+    C -->|Yes| F[API deletes comment]
+    F --> G[Comment removed from list]
+    G --> H[Success message shown]
+
+    style A fill:#e0f2fe
+    style E fill:#dcfce7
+    style H fill:#dcfce7
+    </div>
+
+    <h3>Flow 4: Error Handling</h3>
+    <div class="mermaid">
+graph TD
+    A[User submits comment] --> B[API request sent]
+    B --> C{Request result}
+    C -->|Success| D[Comment added to list]
+    C -->|Network error| E[Show network error]
+    C -->|Validation error| F[Show validation error]
+    C -->|Auth error| G[Show auth error]
+
+    E --> H[User clicks Retry]
+    F --> I[User fixes input]
+    G --> J[User re-authenticates]
+
+    H --> B
+    I --> B
+    J --> B
+
+    D --> K[Clear form]
+
+    style A fill:#e0f2fe
+    style K fill:#dcfce7
+    style E fill:#fee2e2
+    style F fill:#fee2e2
+    style G fill:#fee2e2
+    </div>
+
+    <h3>Flow 5: Real-time Updates (Future)</h3>
+    <div class="mermaid">
+sequenceDiagram
+    participant U1 as User 1
+    participant UI1 as User 1 UI
+    participant WS as WebSocket Server
+    participant API as REST API
+    participant DB as Database
+    participant UI2 as User 2 UI
+    participant U2 as User 2
+
+    U1->>UI1: Adds comment
+    UI1->>API: POST /comments
+    API->>DB: INSERT comment
+    DB-->>API: Comment saved
+    API-->>UI1: Comment data
+    UI1-->>U1: Show new comment
+
+    API->>WS: Broadcast comment.created
+    WS->>UI2: Push comment.created event
+    UI2->>UI2: Append comment to list
+    UI2-->>U2: Show notification
+
+    Note over U1,U2: Both users see the comment in real-time
+    </div>
+  </section>
+
+  <section id="architecture">
+    <h2>Architecture</h2>
+
+    <h3>System Architecture</h3>
+    <div class="mermaid">
+graph TB
+    subgraph "Client Layer"
+        UI[React UI Components]
+        State[State Management]
+    end
+
+    subgraph "API Layer"
+        Router[API Router]
+        Auth[Auth Middleware]
+        Handler[Comment Handler]
+        Valid[Validation]
+    end
+
+    subgraph "Data Layer"
+        DB[(PostgreSQL)]
+        Cache[(Redis Cache)]
+    end
+
+    UI --> State
+    State --> Router
+    Router --> Auth
+    Auth --> Handler
+    Handler --> Valid
+    Valid --> DB
+    Handler --> Cache
+
+    style UI fill:#dbeafe
+    style DB fill:#dcfce7
+    style Cache fill:#fef3c7
+    </div>
+
+    <h3>Data Model</h3>
+    <div class="mermaid">
+erDiagram
+    TASKS ||--o{ COMMENTS : has
+    USERS ||--o{ COMMENTS : creates
+
+    TASKS {
+        uuid id PK
+        string title
+        string description
+        timestamp created_at
+    }
+
+    COMMENTS {
+        uuid id PK
+        uuid task_id FK
+        uuid author_id FK
+        text content
+        timestamp created_at
+        timestamp updated_at
+        boolean is_deleted
+    }
+
+    USERS {
+        uuid id PK
+        string name
+        string email
+    }
+    </div>
+
+    <h3>API Sequence Flow</h3>
+    <div class="mermaid">
+sequenceDiagram
+    actor User
+    participant UI as React UI
+    participant API as API Gateway
+    participant Auth as Auth Service
+    participant DB as PostgreSQL
+    participant Cache as Redis
+
+    User->>UI: Clicks "Add Comment"
+    UI->>UI: Validate input locally
+    UI->>API: POST /api/tasks/{id}/comments
+
+    API->>Auth: Verify JWT token
+    Auth-->>API: User claims
+
+    API->>API: Validate comment data
+
+    API->>DB: INSERT INTO comments
+    DB-->>API: Comment record
+
+    API->>Cache: Invalidate task cache
+    Cache-->>API: Cache cleared
+
+    API-->>UI: 201 Created + comment data
+    UI->>UI: Add comment to list
+    UI-->>User: Show success message
+
+    Note over User,Cache: Comment visible immediately
+    </div>
+  </section>
+
+  <section id="requirements">
+    <h2>Functional Requirements</h2>
+
+    <div class="requirement">
+      <h4>FR-1: Add Comment <span class="badge badge-critical">Critical</span></h4>
+      <p><strong>As a</strong> team member<br>
+      <strong>I want to</strong> add a comment to a task<br>
+      <strong>So that</strong> I can share updates, ask questions, or provide context</p>
+
+      <p><strong>Acceptance Criteria:</strong></p>
+      <ul>
+        <li>✓ Comment form appears below task details</li>
+        <li>✓ Textarea supports multi-line input</li>
+        <li>✓ Markdown formatting is supported (bold, italic, code, links)</li>
+        <li>✓ Submit button is disabled for empty comments</li>
+        <li>✓ Character limit of 10,000 characters enforced</li>
+        <li>✓ Comment appears immediately after successful save</li>
+        <li>✓ Form clears after successful submission</li>
+        <li>✓ Success feedback shown to user</li>
+      </ul>
+
+      <p><strong>Priority:</strong> Critical<br>
+      <strong>Estimate:</strong> 3 days</p>
+    </div>
+
+    <div class="requirement">
+      <h4>FR-2: View Comments <span class="badge badge-critical">Critical</span></h4>
+      <p><strong>As a</strong> team member<br>
+      <strong>I want to</strong> see all comments on a task<br>
+      <strong>So that</strong> I can understand the full conversation history</p>
+
+      <p><strong>Acceptance Criteria:</strong></p>
+      <ul>
+        <li>✓ Comments displayed in chronological order (oldest first)</li>
+        <li>✓ Each comment shows author name, timestamp, and content</li>
+        <li>✓ Relative timestamps ("2 hours ago") with tooltip showing exact time</li>
+        <li>✓ Edited comments show "(edited)" indicator</li>
+        <li>✓ Author avatar/initials displayed</li>
+        <li>✓ Markdown rendered correctly (bold, italic, code blocks, links)</li>
+        <li>✓ Empty state shown when no comments exist</li>
+        <li>✓ Pagination if >20 comments (load more button)</li>
+      </ul>
+
+      <p><strong>Priority:</strong> Critical<br>
+      <strong>Estimate:</strong> 2 days</p>
+    </div>
+
+    <div class="requirement">
+      <h4>FR-3: Edit Comment <span class="badge badge-high">High</span></h4>
+      <p><strong>As a</strong> comment author<br>
+      <strong>I want to</strong> edit my comment after posting<br>
+      <strong>So that</strong> I can fix typos or update information</p>
+
+      <p><strong>Acceptance Criteria:</strong></p>
+      <ul>
+        <li>✓ Edit button visible only to comment author</li>
+        <li>✓ Clicking Edit switches comment to edit mode</li>
+        <li>✓ Textarea pre-filled with current comment text</li>
+        <li>✓ Save and Cancel buttons available</li>
+        <li>✓ Changes saved when clicking Save</li>
+        <li>✓ "(edited)" indicator added to comment</li>
+        <li>✓ Cancel returns to view mode without changes</li>
+        <li>✓ Edit history not tracked (only latest version shown)</li>
+      </ul>
+
+      <p><strong>Priority:</strong> High<br>
+      <strong>Estimate:</strong> 2 days</p>
+    </div>
+
+    <div class="requirement">
+      <h4>FR-4: Delete Comment <span class="badge badge-high">High</span></h4>
+      <p><strong>As a</strong> comment author or project admin<br>
+      <strong>I want to</strong> delete a comment<br>
+      <strong>So that</strong> I can remove outdated or incorrect information</p>
+
+      <p><strong>Acceptance Criteria:</strong></p>
+      <ul>
+        <li>✓ Delete button visible to author and project admins</li>
+        <li>✓ Confirmation dialog shown before deletion</li>
+        <li>✓ Dialog explains action is permanent</li>
+        <li>✓ Comment removed from list after confirmation</li>
+        <li>✓ Soft delete in database (is_deleted flag)</li>
+        <li>✓ Success message shown after deletion</li>
+        <li>✓ Cannot be undone (no restore function)</li>
+      </ul>
+
+      <p><strong>Priority:</strong> High<br>
+      <strong>Estimate:</strong> 1 day</p>
+    </div>
+
+    <div class="requirement">
+      <h4>FR-5: Markdown Support <span class="badge badge-medium">Medium</span></h4>
+      <p><strong>As a</strong> team member<br>
+      <strong>I want to</strong> format comments with markdown<br>
+      <strong>So that</strong> I can emphasize important points and format code</p>
+
+      <p><strong>Acceptance Criteria:</strong></p>
+      <ul>
+        <li>✓ Bold (**text**) and italic (*text*) supported</li>
+        <li>✓ Inline code (`code`) supported</li>
+        <li>✓ Code blocks (```lang) with syntax highlighting</li>
+        <li>✓ Links [text](url) rendered as clickable</li>
+        <li>✓ Links open in new tab (security: rel="noopener")</li>
+        <li>✓ Lists (bulleted and numbered) supported</li>
+        <li>✓ Preview mode to see rendered markdown</li>
+        <li>✓ XSS protection: sanitize HTML output</li>
+      </ul>
+
+      <p><strong>Priority:</strong> Medium<br>
+      <strong>Estimate:</strong> 2 days</p>
+    </div>
+
+    <div class="requirement">
+      <h4>FR-6: Comment Notifications <span class="badge badge-medium">Medium</span></h4>
+      <p><strong>As a</strong> task assignee<br>
+      <strong>I want to</strong> be notified of new comments<br>
+      <strong>So that</strong> I don't miss important updates</p>
+
+      <p><strong>Acceptance Criteria:</strong></p>
+      <ul>
+        <li>✓ Email notification sent to task assignee</li>
+        <li>✓ Notification includes comment author, excerpt, and link</li>
+        <li>✓ In-app notification badge on task</li>
+        <li>✓ Notification settings allow opting out</li>
+        <li>✓ Batch notifications (max 1 email per hour)</li>
+        <li>✓ @mentions notify mentioned users</li>
+        <li>✓ No notification for user's own comments</li>
+      </ul>
+
+      <p><strong>Priority:</strong> Medium<br>
+      <strong>Estimate:</strong> 3 days</p>
+    </div>
+  </section>
+
+  <section id="nonfunctional">
+    <h2>Non-Functional Requirements</h2>
+
+    <h3>NFR-1: Performance</h3>
+    <ul>
+      <li>Comment list loads in <300ms (p95)</li>
+      <li>Add comment completes in <500ms (p95)</li>
+      <li>Edit/delete operations complete in <400ms (p95)</li>
+      <li>Pagination loads additional comments in <200ms</li>
+      <li>Markdown rendering completes in <100ms for typical comment</li>
+      <li>Support 100 concurrent users commenting without degradation</li>
+    </ul>
+
+    <h3>NFR-2: Security</h3>
+    <ul>
+      <li>All API endpoints require authentication (JWT)</li>
+      <li>Edit/delete operations verify ownership (author) or admin role</li>
+      <li>Markdown sanitized to prevent XSS attacks</li>
+      <li>SQL injection prevented via parameterized queries</li>
+      <li>Rate limiting: 10 comments per minute per user</li>
+      <li>HTTPS required for all API calls</li>
+      <li>Input validation: max 10,000 characters per comment</li>
+      <li>CSRF protection via tokens</li>
+    </ul>
+
+    <h3>NFR-3: Accessibility</h3>
+    <ul>
+      <li>WCAG 2.1 AA compliance</li>
+      <li>Keyboard navigation for all comment actions</li>
+      <li>Screen reader support with ARIA labels</li>
+      <li>Focus indicators visible on all interactive elements</li>
+      <li>Color contrast ratio ≥4.5:1 for text</li>
+      <li>Error messages announced to assistive technology</li>
+      <li>Textarea has associated label</li>
+    </ul>
+
+    <h3>NFR-4: Usability</h3>
+    <ul>
+      <li>Comment form visible and accessible on all screen sizes</li>
+      <li>Mobile responsive design (works on 320px width)</li>
+      <li>Touch-friendly buttons (min 44x44px tap targets)</li>
+      <li>Clear visual feedback for all actions</li>
+      <li>Error messages specific and actionable</li>
+      <li>Loading states shown for async operations</li>
+      <li>Optimistic UI updates (show comment immediately, sync in background)</li>
+    </ul>
+
+    <h3>NFR-5: Reliability</h3>
+    <ul>
+      <li>99.5% uptime SLA</li>
+      <li>Graceful degradation if markdown library unavailable</li>
+      <li>Retry logic with exponential backoff for failed requests</li>
+      <li>Transaction rollback on partial failures</li>
+      <li>Database backups every 6 hours</li>
+      <li>Monitoring and alerts for error rates >1%</li>
+    </ul>
+
+    <h3>NFR-6: Scalability</h3>
+    <ul>
+      <li>Support 10,000 comments per task</li>
+      <li>Support 100,000 total comments in system</li>
+      <li>Database indexes on task_id, author_id, created_at</li>
+      <li>Cache frequently accessed task comments (Redis, 5min TTL)</li>
+      <li>Pagination to avoid loading all comments at once</li>
+      <li>API rate limiting to prevent abuse</li>
+    </ul>
+  </section>
+
+  <section id="technical">
+    <h2>Technical Considerations</h2>
+
+    <h3>Architecture Decisions</h3>
+
+    <div class="decision">
+      <h4>Decision 1: REST API vs GraphQL</h4>
+      <p><strong>Chosen:</strong> REST API</p>
+      <p><strong>Rationale:</strong> Existing API is REST-based. Adding GraphQL for one feature increases complexity. REST is sufficient for CRUD operations on comments.</p>
+      <p><strong>Trade-offs:</strong> GraphQL would reduce over-fetching, but adds infrastructure overhead (Apollo Server, schema management).</p>
+      <p><strong>Alternatives considered:</strong> GraphQL (better for complex queries), gRPC (overkill for web clients)</p>
+    </div>
+
+    <div class="decision">
+      <h4>Decision 2: Real-time Updates (WebSockets)</h4>
+      <p><strong>Chosen:</strong> Defer to Phase 2</p>
+      <p><strong>Rationale:</strong> Real-time is nice-to-have, not critical. Polling every 30s is acceptable for MVP. WebSockets add complexity (connection management, scaling, fallbacks).</p>
+      <p><strong>Trade-offs:</strong> Users won't see new comments immediately without refresh. Polling increases server load slightly.</p>
+      <p><strong>Migration path:</strong> Add WebSocket server later, use feature flag to enable gradually</p>
+    </div>
+
+    <div class="decision">
+      <h4>Decision 3: Markdown Library</h4>
+      <p><strong>Chosen:</strong> marked.js + DOMPurify</p>
+      <p><strong>Rationale:</strong> marked.js is lightweight (20KB), fast, and widely used. DOMPurify sanitizes HTML to prevent XSS.</p>
+      <p><strong>Trade-offs:</strong> Two libraries vs one all-in-one solution. But separation of concerns (parsing vs sanitizing) is cleaner.</p>
+      <p><strong>Alternatives considered:</strong> react-markdown (larger bundle), showdown (older, less maintained)</p>
+    </div>
+
+    <div class="decision">
+      <h4>Decision 4: Soft Delete vs Hard Delete</h4>
+      <p><strong>Chosen:</strong> Soft delete (is_deleted flag)</p>
+      <p><strong>Rationale:</strong> Preserves data for auditing. Can restore accidentally deleted comments. Complies with data retention policies.</p>
+      <p><strong>Trade-offs:</strong> Database grows larger (deleted comments still stored). Queries must filter is_deleted=false.</p>
+      <p><strong>Cleanup strategy:</strong> Cron job to hard delete comments >90 days old where is_deleted=true</p>
+    </div>
+
+    <h3>Database Schema</h3>
+    <pre><code>CREATE TABLE comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL CHECK (length(content) <= 10000),
+  is_deleted BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX idx_comments_task_id ON comments(task_id) WHERE is_deleted = FALSE;
+CREATE INDEX idx_comments_author_id ON comments(author_id);
+CREATE INDEX idx_comments_created_at ON comments(created_at DESC);
+
+-- Trigger to update updated_at on edits
+CREATE TRIGGER update_comments_updated_at
+  BEFORE UPDATE ON comments
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();</code></pre>
+
+    <h3>API Endpoints</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Endpoint</th>
+          <th>Description</th>
+          <th>Auth</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>GET</td>
+          <td>/api/tasks/{id}/comments</td>
+          <td>List all comments for a task</td>
+          <td>Required</td>
+        </tr>
+        <tr>
+          <td>POST</td>
+          <td>/api/tasks/{id}/comments</td>
+          <td>Add a new comment</td>
+          <td>Required</td>
+        </tr>
+        <tr>
+          <td>PUT</td>
+          <td>/api/comments/{id}</td>
+          <td>Edit a comment (author only)</td>
+          <td>Required</td>
+        </tr>
+        <tr>
+          <td>DELETE</td>
+          <td>/api/comments/{id}</td>
+          <td>Delete a comment (author/admin)</td>
+          <td>Required</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>Example Request/Response</h4>
+    <pre><code>// POST /api/tasks/abc-123/comments
+{
+  "content": "Should we add OAuth support?"
+}
+
+// Response: 201 Created
+{
+  "id": "xyz-789",
+  "task_id": "abc-123",
+  "author_id": "user-456",
+  "author_name": "Sarah Chen",
+  "content": "Should we add OAuth support?",
+  "is_deleted": false,
+  "created_at": "2026-04-23T10:30:00Z",
+  "updated_at": "2026-04-23T10:30:00Z"
+}</code></pre>
+
+    <h3>Dependencies</h3>
+
+    <h4>New Dependencies:</h4>
+    <ul>
+      <li><code>marked</code> ^12.0.0 - Markdown parser (20KB)</li>
+      <li><code>dompurify</code> ^3.0.0 - HTML sanitizer (45KB)</li>
+    </ul>
+
+    <h4>Existing Dependencies:</h4>
+    <ul>
+      <li><code>react</code> - UI framework</li>
+      <li><code>express</code> - API routing</li>
+      <li><code>pg</code> - PostgreSQL client</li>
+      <li><code>jsonwebtoken</code> - Authentication</li>
+      <li><code>redis</code> - Caching</li>
+    </ul>
+
+    <h3>Implementation Plan</h3>
+
+    <h4>Phase 1: Core Functionality (Week 1-2)</h4>
+    <ol>
+      <li>Database schema and migrations</li>
+      <li>API endpoints (CRUD operations)</li>
+      <li>Basic React UI components</li>
+      <li>Add/view comments (no markdown yet)</li>
+      <li>Unit tests for API and components</li>
+    </ol>
+
+    <h4>Phase 2: Enhanced Features (Week 3)</h4>
+    <ol>
+      <li>Edit and delete functionality</li>
+      <li>Markdown support with preview</li>
+      <li>Pagination for long comment lists</li>
+      <li>Error handling and loading states</li>
+      <li>Integration tests</li>
+    </ol>
+
+    <h4>Phase 3: Polish (Week 4)</h4>
+    <ol>
+      <li>Accessibility improvements (ARIA, keyboard nav)</li>
+      <li>Mobile responsive design</li>
+      <li>Performance optimization (caching)</li>
+      <li>Monitoring and logging</li>
+      <li>User acceptance testing</li>
+    </ol>
+
+    <h4>Phase 4: Notifications (Week 5)</h4>
+    <ol>
+      <li>Email notification system</li>
+      <li>In-app notification badges</li>
+      <li>@mention detection and parsing</li>
+      <li>Notification preferences</li>
+      <li>Load testing</li>
+    </ol>
+
+    <h3>Testing Strategy</h3>
+
+    <h4>Unit Tests:</h4>
+    <ul>
+      <li>API handlers (add, edit, delete, list)</li>
+      <li>Markdown parsing and sanitization</li>
+      <li>React component rendering</li>
+      <li>Validation logic</li>
+      <li>Target: 80% code coverage</li>
+    </ul>
+
+    <h4>Integration Tests:</h4>
+    <ul>
+      <li>Full API request/response cycles</li>
+      <li>Database operations (CRUD)</li>
+      <li>Authentication and authorization</li>
+      <li>Cache invalidation</li>
+    </ul>
+
+    <h4>E2E Tests:</h4>
+    <ul>
+      <li>User adds comment and sees it in list</li>
+      <li>User edits own comment</li>
+      <li>User deletes own comment</li>
+      <li>Admin deletes any comment</li>
+      <li>Markdown renders correctly</li>
+      <li>Error states display properly</li>
+    </ul>
+
+    <h3>Monitoring and Observability</h3>
+
+    <h4>Metrics to Track:</h4>
+    <ul>
+      <li>Comment creation rate (per minute)</li>
+      <li>API endpoint latency (p50, p95, p99)</li>
+      <li>Error rate by endpoint</li>
+      <li>Database query duration</li>
+      <li>Cache hit rate</li>
+      <li>User engagement (comments per task)</li>
+    </ul>
+
+    <h4>Alerts:</h4>
+    <ul>
+      <li>Error rate >1% for comment endpoints</li>
+      <li>API latency p95 >500ms</li>
+      <li>Database connection pool exhaustion</li>
+      <li>Failed notification delivery rate >5%</li>
+    </ul>
+
+    <h4>Logging:</h4>
+    <ul>
+      <li>Log all comment CRUD operations (info level)</li>
+      <li>Log authentication failures (warn level)</li>
+      <li>Log validation errors (warn level)</li>
+      <li>Log system errors (error level)</li>
+      <li>Include: user_id, task_id, comment_id, timestamp</li>
+      <li>Redact: comment content (PII concerns)</li>
+    </ul>
+
+    <h3>Security Considerations</h3>
+
+    <h4>Threats and Mitigations:</h4>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Threat</th>
+          <th>Mitigation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>XSS via markdown</td>
+          <td>DOMPurify sanitization, CSP headers</td>
+        </tr>
+        <tr>
+          <td>SQL injection</td>
+          <td>Parameterized queries, ORM</td>
+        </tr>
+        <tr>
+          <td>CSRF</td>
+          <td>SameSite cookies, CSRF tokens</td>
+        </tr>
+        <tr>
+          <td>Spam/abuse</td>
+          <td>Rate limiting (10/min), content moderation</td>
+        </tr>
+        <tr>
+          <td>Unauthorized edits</td>
+          <td>Ownership verification, admin role check</td>
+        </tr>
+        <tr>
+          <td>Data leaks</td>
+          <td>Task-level permissions (only visible to team)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>Compliance:</h4>
+    <ul>
+      <li><strong>GDPR:</strong> Comments included in user data export, deleted on user deletion</li>
+      <li><strong>Data retention:</strong> Hard delete after 90 days of soft delete</li>
+      <li><strong>Audit trail:</strong> Log all comment operations with timestamps</li>
+    </ul>
+
+    <h3>Rollback Plan</h3>
+
+    <p>If critical issues arise post-deployment:</p>
+
+    <ol>
+      <li><strong>Feature flag off:</strong> Disable comments UI via <code>ENABLE_COMMENTS</code> flag (no code deploy needed)</li>
+      <li><strong>API remains functional:</strong> Existing comments visible but no new additions</li>
+      <li><strong>Database unchanged:</strong> Schema changes are additive (no data loss)</li>
+      <li><strong>Full rollback:</strong> Revert to previous deployment, hide comments section</li>
+      <li><strong>Gradual re-enable:</strong> Fix issue, test, re-enable feature flag for 10% of users, monitor, scale to 100%</li>
+    </ol>
+
+    <h3>Future Enhancements</h3>
+
+    <ul>
+      <li><strong>Real-time updates:</strong> WebSocket integration for instant comment visibility</li>
+      <li><strong>Rich text editor:</strong> WYSIWYG editor instead of raw markdown</li>
+      <li><strong>File attachments:</strong> Upload images, PDFs to comments</li>
+      <li><strong>Comment reactions:</strong> 👍 👎 ❤️ emoji reactions</li>
+      <li><strong>Comment threading:</strong> Reply to specific comments</li>
+      <li><strong>Comment search:</strong> Full-text search across comments</li>
+      <li><strong>Comment templates:</strong> Pre-defined comment formats (status update, blocker, etc.)</li>
+      <li><strong>Comment analytics:</strong> Most active commenters, response times</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>Generated with <a href="https://github.com/martythewizard/claude-grimoire">claude-grimoire</a> • visual-prd skill</p>
+  </footer>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true
+      }
+    });
+  </script>
+</body>
+</html>
