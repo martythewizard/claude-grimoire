@@ -13,9 +13,14 @@ You are coordinating a build using Claude Code Agent Teams. Read the plan docume
 - **Plan path**: `$1` - Path to a markdown file describing what to build
 - **Team size**: `$2` - Number of agents (optional)
 
+## Preloaded Context
+
+Plan document (`$1`):
+!`cat "$(echo "$ARGUMENTS" | cut -d' ' -f1)" 2>/dev/null || echo '{"error":"plan file not found — check the path passed as first argument"}'`
+
 ## Step 1: Read the Plan
 
-Read the plan document at `$1`. Understand:
+Parse the plan from `## Preloaded Context` above (already loaded — no Read call needed). If it shows `{"error":...}`, STOP and ask the user to confirm the plan path before proceeding. Understand:
 - What are we building?
 - What are the major components/layers?
 - What technologies are involved?
@@ -341,9 +346,9 @@ The build is complete when:
 
 ## Execute
 
-Now read the plan at `$1` and begin:
+Now use the preloaded plan from `## Preloaded Context` above and begin:
 
-1. Read and understand the plan
+1. Use the preloaded plan (already in context — no Read call needed)
 2. Determine team size (use `$2` if provided, otherwise decide)
 3. Define agent roles, ownership, cross-cutting concern assignments, and validation requirements
 4. Map the contract chain and define all integration contracts from the plan — exact URLs, response shapes, data models, SSE formats
